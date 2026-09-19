@@ -1,8 +1,8 @@
 <!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>miracl杯</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>miracle杯</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon-32.png">
-<meta name="apple-mobile-web-app-title" content="miracl杯">
+<meta name="apple-mobile-web-app-title" content="miracle杯">
 <style>
 :root{--ink:#1a2332;--line:#d3dbe8;--head:#2b3a67;--accent:#e8407a;--rest:#9aa6bd;--bg:#f4f6fb;
 --w:#fdeef4;--wb:#e8407a;--m1:#e9f1ff;--m1b:#2f6fe0;--m2:#e8f7ee;--m2b:#1f9d57;}
@@ -104,8 +104,8 @@ table.ch-score{width:100%;border-collapse:collapse;table-layout:fixed}
 </style></head><body>
 <div class="wrap">
 <div id="screen">
-<h1 class="title"><b>miracl</b>杯</h1>
-<p class="sub">3コート進行表 ／ コートA=女子・コートB=混合①・コートC=混合②（チーム数自由）</p>
+<h1 class="title"><b>miracle</b>杯</h1>
+<p class="sub">3コート進行表 ／ コートA=女子・コートB=混合①・コートC=混合②（チーム数自由）<br><span id="ruleline"></span></p>
 
 <div class="card noprint">
   <h2>⚙️ 大会設定（変えると自動で組み直します）</h2>
@@ -115,12 +115,14 @@ table.ch-score{width:100%;border-collapse:collapse;table-layout:fixed}
     <div class="grp"><label>混合②チーム数</label><input id="cm2" type="number" min="0" max="16"></div>
     <div class="grp"><label>開始時刻</label><input id="cstart" type="time"></div>
     <div class="grp"><label>1試合（分）</label><input id="cdur" type="number" min="5" max="60"></div>
+    <div class="grp"><label>セット得点</label><input id="cpt" type="number" min="5" max="30"></div>
+    <div class="grp"><label>デュース上限</label><input id="ccap" type="number" min="5" max="40"></div>
   </div>
   <p class="note" id="cfgsummary" style="text-align:center"></p>
 </div>
 
 <div class="bar noprint">
-  <button onclick="window.print()">🖨 印刷（A4・コート毎）</button>
+  <button onclick="document.body.classList.remove('cards-mode');window.print()">🖨 印刷（A4・コート毎）</button>
   <button onclick="printCards()">🎫 対戦カード印刷（A4に2部→A5）</button>
   <button onclick="openResults()" style="background:var(--accent)">🏆 結果・順位アプリを開く</button>
   <button onclick="exportData()">💾 データ保存</button>
@@ -157,13 +159,14 @@ table.ch-score{width:100%;border-collapse:collapse;table-layout:fixed}
 <div id="printcards"></div>
 </div>
 <script>
-const CK='miracl_config_v1', NK='miracl_names_v2', RK='miracl_results_v2';
+const CK='miracle_config_v1', NK='miracle_names_v2', RK='miracle_results_v2', SK='miracle_schedule_v1', AK='miracle_archive_v1';
+const ruleTxt=()=>`${cfg.pt}点マッチ・デュースは${cfg.cap}点打ち切り`;
 const LEAGUES=[
  {key:'w', name:'女子',   court:'コートA', color:'#e8407a', cell:'cw'},
  {key:'m1',name:'混合①', court:'コートB', color:'#2f6fe0', cell:'cm1'},
  {key:'m2',name:'混合②', court:'コートC', color:'#1f9d57', cell:'cm2'},
 ];
-let cfg={w:8,m1:7,m2:7,start:'09:00',dur:25};
+let cfg={w:8,m1:7,m2:7,start:'09:00',dur:25,pt:15,cap:17};
 try{Object.assign(cfg,JSON.parse(localStorage.getItem(CK))||{})}catch(e){}
 let names={}; try{names=JSON.parse(localStorage.getItem(NK))||{}}catch(e){}
 const k=(lg,t)=>lg+':'+t;
@@ -283,6 +286,7 @@ function renderSched(){
   document.getElementById('schedwrap').innerHTML=
    `<table><thead><tr><th>枠</th><th>時刻</th><th class="colA">コートA<br><small>女子</small></th><th class="colB">コートB<br><small>混合①</small></th><th class="colC">コートC<br><small>混合②</small></th></tr></thead><tbody>${rows}</tbody></table>`;
   const W=cfg.w*(cfg.w-1)/2, G1=cfg.m1*(cfg.m1-1)/2, G2=cfg.m2*(cfg.m2-1)/2;
+  document.getElementById('ruleline').textContent='2セット制・'+ruleTxt();
   document.getElementById('cfgsummary').innerHTML=
    `試合数：女子 <b>${W}</b>・混合① <b>${G1}</b>・混合② <b>${G2}</b>（計 ${W+G1+G2}試合）／ 全<b>${slots.length}枠</b> ・ 終了目安 <b>${timeOf(slots.length)}</b>`;
 }
@@ -325,8 +329,8 @@ function renderNames(){
 function renderPrint(){
   let html='';
   /* 1ページ目: タイトル+チーム名 */
-  html+='<div class="pp"><div class="pp-title"><div class="t1"><b>miracl</b>杯</div><div class="t2">'+
-    LEAGUES.map(L=>`${L.name} ${size(L.key)}チーム`).join(' ／ ')+`（1試合${cfg.dur}分・2セット）</div></div><div class="pn-grid">`+
+  html+='<div class="pp"><div class="pp-title"><div class="t1"><b>miracle</b>杯</div><div class="t2">'+
+    LEAGUES.filter(L=>size(L.key)>=2).map(L=>`${L.name} ${size(L.key)}チーム`).join(' ／ ')+`（1試合${cfg.dur}分・2セット・${ruleTxt()}）</div></div><div class="pn-grid">`+
     LEAGUES.map(L=>{
       const n=size(L.key); if(n<2)return '';
       let list='';
@@ -354,7 +358,7 @@ function renderPrint(){
     });
     html+=`<div class="pp"><div class="cp-head" style="border-color:${L.color}">
       <span class="cp-court" style="color:${L.color}">${L.court}<small style="font-size:15px;margin-left:8px;color:var(--ink)">基本：${L.name}</small></span>
-      <span class="cp-tour">miracl杯 進行表（1試合${cfg.dur}分）</span></div>
+      <span class="cp-tour">miracle杯 進行表（1試合${cfg.dur}分・${ruleTxt()}）</span></div>
       <table><thead><tr><th style="width:70px">枠</th><th style="width:60px">時刻</th><th>対戦</th><th style="width:110px">審判</th></tr></thead><tbody>${rows}</tbody></table>
       <p class="note">※ピンク帯＝女子一斉枠（このコートも女子の試合・審判は混合チーム）。[混合①][混合②]表記はこのコートで消化する他リーグの試合。</p></div>`;
   });
@@ -369,7 +373,7 @@ function renderPrint(){
     }
     html+=`<div class="pp"><div class="cp-head" style="border-color:${L.color}">
       <span class="cp-court" style="color:${L.color}">${L.name} 星取表</span>
-      <span class="cp-tour">miracl杯（${n}チーム 総当たり）</span></div>
+      <span class="cp-tour">miracle杯（${n}チーム 総当たり）</span></div>
       <table class="star"><thead><tr><th class="gh corner"></th>${head}<th class="gh" style="width:8%">勝</th><th class="gh" style="width:9%">順位</th></tr></thead><tbody>${body}</tbody></table></div>`;
   });
   document.getElementById('printpages').innerHTML=html;
@@ -386,11 +390,11 @@ function renderCards(){
       const court=['コートA','コートB','コートC'][ci];
       const refTxt=c.ref==='mix'?'混合チーム':(c.ref===''?'（当日決定）':esc(fullnm(c.lg,c.ref)));
       const half=`<div class="chalf">
-        <div class="ch-top"><span class="ch-brand"><b>miracl</b>杯 対戦カード</span>
+        <div class="ch-top"><span class="ch-brand"><b>miracle</b>杯 対戦カード</span>
           <span class="ch-meta" style="color:${L.color}">${L.name} 第${counter[c.lg]}試合</span>
           <span class="ch-meta2">${court}・第${i+1}枠・${timeOf(i)}〜</span></div>
         <div class="ch-vs"><span class="t">${esc(fullnm(c.lg,c.m[0]))}</span><span class="vs">対</span><span class="t">${esc(fullnm(c.lg,c.m[1]))}</span></div>
-        <div class="ch-ref">審判チーム：<b>${refTxt}</b></div>
+        <div class="ch-ref">審判チーム：<b>${refTxt}</b>　<span style="color:var(--rest);font-size:12px">2セット制・${ruleTxt()}</span></div>
         <table class="ch-score"><thead><tr><th></th><th>${esc(fullnm(c.lg,c.m[0]))}</th><th>${esc(fullnm(c.lg,c.m[1]))}</th></tr></thead>
         <tbody><tr><th>1セット目</th><td></td><td></td></tr>
         <tr><th>2セット目</th><td></td><td></td></tr>
@@ -411,7 +415,7 @@ function printCards(){
 }
 /* ---- 設定 ---- */
 function bindCfg(){
-  const ids={cw:'w',cm1:'m1',cm2:'m2',cstart:'start',cdur:'dur'};
+  const ids={cw:'w',cm1:'m1',cm2:'m2',cstart:'start',cdur:'dur',cpt:'pt',ccap:'cap'};
   for(const id in ids){
     const el=document.getElementById(id);
     el.value=cfg[ids[id]];
@@ -421,27 +425,35 @@ function bindCfg(){
       if(id==='cw'&&(v<2||v>16))return;
       if((id==='cm1'||id==='cm2')&&(v<0||v>16))return;
       if(id==='cdur'&&(v<5||v>60))return;
+      if(id==='cpt'&&(v<5||v>30))return;
+      if(id==='ccap'&&(v<5||v>40))return;
       cfg[ids[id]]=v;
       localStorage.setItem(CK,JSON.stringify(cfg));
       rebuild();
     });
   }
 }
-function rebuild(){buildSchedule();renderSched();renderStars();renderNames();renderPrint();}
+function saveSchedule(){
+  const sc={w:[],m1:[],m2:[]};
+  slots.forEach((sl,i)=>sl.cells.forEach((c,ci)=>{ if(c)sc[c.lg].push({a:c.m[0],b:c.m[1],slot:i+1,court:'ABC'[ci],ref:c.ref}); }));
+  localStorage.setItem(SK,JSON.stringify({cfg:{w:cfg.w,m1:cfg.m1,m2:cfg.m2},lg:sc}));
+}
+function rebuild(){buildSchedule();saveSchedule();renderSched();renderStars();renderNames();renderPrint();}
 /* ---- 各種ボタン ---- */
 function openResults(){
-  const url=new URL('miracl-results.html', location.href).href;
-  const w=window.open(url,'miraclResults','width=820,height=900,scrollbars=yes,resizable=yes');
-  if(!w) alert('ポップアップがブロックされました。ブラウザのポップアップ許可をオンにするか、miracl-results.html を直接開いてください。');
+  const url=new URL('miracle-results.html', location.href).href;
+  const w=window.open(url,'miracleResults','width=820,height=900,scrollbars=yes,resizable=yes');
+  if(!w) alert('ポップアップがブロックされました。ブラウザのポップアップ許可をオンにするか、miracle-results.html を直接開いてください。');
 }
 function exportData(){
   const data={config:cfg,
     names:JSON.parse(localStorage.getItem(NK)||'{}'),
     results:JSON.parse(localStorage.getItem(RK)||'{}'),
-    archive:JSON.parse(localStorage.getItem('miracl_archive_v1')||'[]')};
+    archive:JSON.parse(localStorage.getItem(AK)||'[]'),
+    schedule:JSON.parse(localStorage.getItem(SK)||'null')};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='miracl杯-データ.json';a.click();URL.revokeObjectURL(a.href);
+  a.download='miracle杯-データ.json';a.click();URL.revokeObjectURL(a.href);
 }
 document.getElementById('imp').addEventListener('change',e=>{
   const f=e.target.files[0];if(!f)return;const rd=new FileReader();
@@ -449,28 +461,28 @@ document.getElementById('imp').addEventListener('change',e=>{
     if(d.config)localStorage.setItem(CK,JSON.stringify(d.config));
     if(d.names)localStorage.setItem(NK,JSON.stringify(d.names));
     if(d.results)localStorage.setItem(RK,JSON.stringify(d.results));
-    if(d.archive)localStorage.setItem('miracl_archive_v1',JSON.stringify(d.archive));
+    if(d.archive)localStorage.setItem(AK,JSON.stringify(d.archive));
+    if(d.schedule)localStorage.setItem(SK,JSON.stringify(d.schedule));
     alert('読み込みました');location.reload();
   }catch(err){alert('このファイルは読み込めませんでした');}};rd.readAsText(f);
 });
 function clearAll(){
   if(!confirm('全データ（チーム名・試合結果・大会設定）を消して初期状態に戻します。\n※試合結果が入っていれば、戦績は結果アプリの「📚 過去の戦績」に自動で残ります。\n\nクリアしますか？'))return;
   if(!confirm('この操作は元に戻せません。本当によろしいですか？'))return;
-  const AK='miracl_archive_v1';
   const res=JSON.parse(localStorage.getItem(RK)||'{}');
   if(Object.keys(res).length){
-    const def='miracl杯 '+new Date().toLocaleDateString('ja-JP');
+    const def='miracle杯 '+new Date().toLocaleDateString('ja-JP');
     const name=prompt('アーカイブ名（大会名など）:',def);
     let arc=[]; try{arc=JSON.parse(localStorage.getItem(AK))||[]}catch(e){}
     arc.push({name:(name&&name.trim())||def, savedAt:new Date().toISOString(),
-      config:JSON.parse(localStorage.getItem(CK)||'{}'),
+      config:Object.assign({},cfg),
       names:JSON.parse(localStorage.getItem(NK)||'{}'), results:res});
     localStorage.setItem(AK,JSON.stringify(arc));
   }
-  [CK,NK,RK,'miracl_results_v1'].forEach(k2=>localStorage.removeItem(k2));
+  [CK,NK,RK,SK,'miracl_config_v1','miracl_names_v2','miracl_results_v2'].forEach(k2=>localStorage.removeItem(k2));
   alert('クリアしました（戦績はアーカイブに保存済み）');
   location.reload();
 }
-bindCfg();rebuild();
+localStorage.setItem(CK,JSON.stringify(cfg));bindCfg();rebuild();
 if(location.search.indexOf('cards')>=0){renderCards();document.body.classList.add('cards-mode');}
 </script></body></html>

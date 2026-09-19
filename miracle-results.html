@@ -1,8 +1,8 @@
 <!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>miracl杯 結果・順位</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>miracle杯 結果・順位</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon-32.png">
-<meta name="apple-mobile-web-app-title" content="miracl杯">
+<meta name="apple-mobile-web-app-title" content="miracle杯">
 <style>
 :root{--ink:#1a2332;--line:#d3dbe8;--head:#2b3a67;--accent:#e8407a;--rest:#9aa6bd;--bg:#f4f6fb;--gold:#f6c945;}
 *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -33,6 +33,11 @@ thead th{background:var(--head);color:#fff;font-weight:600;font-size:12.5px}
 .mt-list .tb{text-align:left;padding-left:8px;font-weight:600}
 .setlbl{font-size:11px;color:var(--rest)}
 .done{background:#f3fbf5}
+.mt-list input.tie{border:2px solid #d33;background:#fff0f0}
+.mt-list input.bad{border:2px solid #e8a317;background:#fff8e6}
+.warn{font-size:12px;color:#b00;margin-top:6px;line-height:1.7}
+.warn.ok{color:#1f9d57}
+.mt-list .when{font-size:11px;color:var(--rest);white-space:nowrap;line-height:1.4}
 .bar{text-align:center;margin-bottom:14px}
 .bar button{background:var(--head);color:#fff;border:0;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;margin:3px 4px}
 .note{font-size:12px;color:var(--rest);margin-top:8px;line-height:1.7}
@@ -41,8 +46,8 @@ thead th{background:var(--head);color:#fff;font-weight:600;font-size:12.5px}
 @page{size:A4 portrait;margin:0} /* 余白0でブラウザのURL/日付印字を消す */
 @media print{body{background:#fff;padding:12mm}.noprint{display:none}.card{box-shadow:none;page-break-inside:avoid}}
 </style></head><body><div class="wrap">
-<h1 class="title"><b>miracl</b>杯 <span style="font-size:20px">結果・順位</span></h1>
-<p class="sub">2セット制 ／ 順位は「① 獲得セット数 → ② 直接対決 → ③ 得失点差」で自動計算 ／ チーム数は進行表アプリの設定に連動</p>
+<h1 class="title"><b>miracle</b>杯 <span style="font-size:20px">結果・順位</span></h1>
+<p class="sub">2セット制・<span id="ruleline"></span> ／ 順位は「① 獲得セット数 → ② 直接対決 → ③ 得失点差」で自動計算 ／ チーム数は進行表アプリの設定に連動</p>
 <div class="tabs" id="tabs"></div>
 <div class="bar noprint">
   <button onclick="window.print()">🖨 順位表を印刷/PDF</button>
@@ -60,11 +65,12 @@ thead th{background:var(--head);color:#fff;font-weight:600;font-size:12.5px}
 <div id="matches"></div>
 <div id="archwrap"></div>
 <p class="note">※各試合とも「1セット目」「2セット目」の両チームの得点を入力してください。両チームに値が入ったセットだけ集計します。<br>
-※チーム数・チーム名は進行表アプリ（miracl-cup.html）の設定と共有。結果はこの端末に自動保存されます。</p>
+※試合の並び順・枠・時刻は進行表アプリと同じ（対戦カードの「第N試合」と一致）。<br>※チーム数・チーム名は進行表アプリ（miracle-cup.html）の設定と共有。結果はこの端末に自動保存されます。</p>
 </div>
 <script>
-const CK='miracl_config_v1', NK='miracl_names_v2', RK='miracl_results_v2';
-let cfg={w:8,m1:7,m2:7,start:'09:00',dur:25};
+const CK='miracle_config_v1', NK='miracle_names_v2', RK='miracle_results_v2', SK='miracle_schedule_v1', AK='miracle_archive_v1';
+const DEF={w:8,m1:7,m2:7,start:'09:00',dur:25,pt:15,cap:17};
+let cfg=Object.assign({},DEF);
 try{Object.assign(cfg,JSON.parse(localStorage.getItem(CK))||{})}catch(e){}
 const LEAGUES=[
  {key:'w', name:'女子',   color:'#e8407a'},
@@ -93,6 +99,32 @@ const sizeOf=(lg,C)=>({w:C.w,m1:C.m1,m2:C.m2})[lg];
 const pairsFor=(lg,C)=>roundRobin(sizeOf(lg,C)).flat();
 const pairsOf=lg=>pairsFor(lg,cfg);
 const rkey=(lg,p)=>lg+':'+Math.min(p[0],p[1])+'-'+Math.max(p[0],p[1]);
+let sched=null; try{sched=JSON.parse(localStorage.getItem(SK))}catch(e){}
+/* 進行表アプリが保存した順番（枠・時刻・コート付き）。チーム数が合わなければ総当たり順に戻す */
+function orderedMatches(lg){
+  const base=pairsOf(lg);
+  if(sched&&sched.lg&&sched.lg[lg]&&sched.cfg&&sizeOf(lg,sched.cfg)==sizeOf(lg,cfg)){
+    const list=sched.lg[lg];
+    const a=new Set(base.map(p=>rkey(lg,p))), b=new Set(list.map(m=>rkey(lg,[m.a,m.b])));
+    if(a.size===b.size&&[...a].every(x=>b.has(x))) return list.map(m=>({p:[m.a,m.b],slot:m.slot,court:m.court}));
+  }
+  return base.map(p=>({p,slot:null,court:null}));
+}
+function timeOf(i){
+  const [h,m]=(cfg.start||'09:00').split(':').map(Number);
+  const tot=h*60+m+(i-1)*(+cfg.dur||25);
+  return String(Math.floor(tot/60)%24).padStart(2,'0')+':'+String(tot%60).padStart(2,'0');
+}
+/* セット得点のチェック: ok / tie(同点) / bad(ルール外・未完了) / empty */
+function setStatus(x,y){
+  if(x===''||y===''||x==null||y==null)return 'empty';
+  x=+x;y=+y; if(x===y)return 'tie';
+  const pt=+cfg.pt||15, cap=+cfg.cap||17, w=Math.max(x,y), l=Math.min(x,y);
+  if(w===pt&&l<=pt-2)return 'ok';
+  if(w>pt&&w<cap&&w-l===2)return 'ok';
+  if(w===cap&&cap>pt&&(w-l===2||w-l===1))return 'ok';
+  return 'bad';
+}
 
 function calc(lg){return calc2(lg,cfg,results);}
 function calc2(lg,C,R){
@@ -172,22 +204,49 @@ function standCardHTML(lg,C,N,R){
 function renderStand(){
   document.getElementById('stand').innerHTML=standCardHTML(cur,cfg,names,results);
 }
+function markSet(row,key,r){
+  /* 入力欄に同点(赤)/ルール外(黄)の印を付ける */
+  let tie=0,bad=0;
+  [['s1a','s1b'],['s2a','s2b']].forEach(([fa,fb])=>{
+    const st=setStatus(r[fa],r[fb]);
+    row.querySelectorAll(`input[data-f="${fa}"],input[data-f="${fb}"]`).forEach(inp=>{inp.classList.toggle('tie',st==='tie');inp.classList.toggle('bad',st==='bad');});
+    if(st==='tie')tie++; if(st==='bad')bad++;
+  });
+  return {tie,bad};
+}
+function renderWarn(){
+  const el=document.getElementById('warnline'); if(!el)return;
+  let tie=0,bad=0;
+  orderedMatches(cur).forEach(m=>{const r=results[rkey(cur,m.p)]||{};
+    [['s1a','s1b'],['s2a','s2b']].forEach(([fa,fb])=>{const st=setStatus(r[fa],r[fb]);if(st==='tie')tie++;if(st==='bad')bad++;});});
+  const pt=+cfg.pt||15,cap=+cfg.cap||17;
+  if(!tie&&!bad){el.className='warn ok';el.textContent='入力済みのセット得点はすべてルール通りです。';return;}
+  el.className='warn';
+  el.innerHTML=(tie?`<b>赤：同点のセットが${tie}つ</b>あります（同点はどちらのセットにも数えません）。 `:'')+
+    (bad?`<b>黄：ルール外／未完了のセットが${bad}つ</b>あります（${pt}点先取・2点差、${pt-1}-${pt-1}からデュース、${cap}点で打ち切り）。得点はそのまま集計します。`:'');
+}
 function renderMatches(){
-  const L=LEAGUES.find(l=>l.key===cur);const prs=pairsOf(cur);
+  const L=LEAGUES.find(l=>l.key===cur);const ms=orderedMatches(cur);
+  const hasSched=ms.some(m=>m.slot!=null);
   let rows='';
-  prs.forEach((pr,i)=>{
-    const [a,b]=pr;const key=rkey(cur,pr);const r=results[key]||{};
+  ms.forEach((m,i)=>{
+    const [a,b]=m.p;const key=rkey(cur,m.p);const r=results[key]||{};
     const v=f=>(r[f]!=null?r[f]:'');
     const filled=['s1a','s1b','s2a','s2b'].every(f=>v(f)!=='');
+    const when=hasSched?`<td class="when">第${m.slot}枠<br>${timeOf(m.slot)}<br>コート${m.court}</td>`:'';
     rows+=`<tr class="mrow ${filled?'done':''}">
-      <td class="small">${i+1}</td>
+      <td class="small">${i+1}</td>${when}
       <td class="ta">${esc(nm(cur,a))}</td>
       <td><span class="setlbl">1st</span><br><input inputmode="numeric" data-k="${key}" data-f="s1a" value="${v('s1a')}"> <span class="vs">-</span> <input inputmode="numeric" data-k="${key}" data-f="s1b" value="${v('s1b')}"></td>
       <td><span class="setlbl">2nd</span><br><input inputmode="numeric" data-k="${key}" data-f="s2a" value="${v('s2a')}"> <span class="vs">-</span> <input inputmode="numeric" data-k="${key}" data-f="s2b" value="${v('s2b')}"></td>
       <td class="tb">${esc(nm(cur,b))}</td></tr>`;
   });
-  document.getElementById('matches').innerHTML=`<div class="card mt-list"><h2 style="border-color:${L.color}">${L.name} 試合結果入力（全${prs.length}試合）</h2>
-    <table><thead><tr><th>試合</th><th>チーム</th><th>1セット目</th><th>2セット目</th><th>チーム</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  document.getElementById('matches').innerHTML=`<div class="card mt-list"><h2 style="border-color:${L.color}">${L.name} 試合結果入力（全${ms.length}試合）</h2>
+    <table><thead><tr><th>試合</th>${hasSched?'<th>枠・時刻<br>コート</th>':''}<th>チーム</th><th>1セット目</th><th>2セット目</th><th>チーム</th></tr></thead><tbody>${rows}</tbody></table>
+    <div id="warnline" class="warn"></div>
+    ${hasSched?'':'<p class="note">※進行表アプリを一度開くと、ここが進行表の順番（枠・時刻・コート付き）になります。</p>'}</div>`;
+  document.querySelectorAll('#matches tr.mrow').forEach(row=>{const inp=row.querySelector('input');markSet(row,inp.dataset.k,results[inp.dataset.k]||{});});
+  renderWarn();
   document.querySelectorAll('#matches input').forEach(inp=>{
     inp.addEventListener('input',()=>{
       const key=inp.dataset.k,f=inp.dataset.f;
@@ -198,6 +257,8 @@ function renderMatches(){
       const row=inp.closest('tr');
       const done=['s1a','s1b','s2a','s2b'].every(x=>(results[key][x]||'')!=='');
       row.classList.toggle('done',done);
+      markSet(row,key,results[key]);
+      renderWarn();
       renderStand();
     });
   });
@@ -236,10 +297,11 @@ function clearLeague(){
 function exportData(){
   const data={config:cfg,names:JSON.parse(localStorage.getItem(NK)||'{}'),
     results:JSON.parse(localStorage.getItem(RK)||'{}'),
-    archive:JSON.parse(localStorage.getItem(AK)||'[]')};
+    archive:JSON.parse(localStorage.getItem(AK)||'[]'),
+    schedule:JSON.parse(localStorage.getItem(SK)||'null')};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='miracl杯-データ.json';a.click();URL.revokeObjectURL(a.href);
+  a.download='miracle杯-データ.json';a.click();URL.revokeObjectURL(a.href);
 }
 document.getElementById('imp').addEventListener('change',e=>{
   const f=e.target.files[0];if(!f)return;const rd=new FileReader();
@@ -248,21 +310,21 @@ document.getElementById('imp').addEventListener('change',e=>{
     if(d.names)localStorage.setItem(NK,JSON.stringify(d.names));
     if(d.results)localStorage.setItem(RK,JSON.stringify(d.results));
     if(d.archive)localStorage.setItem(AK,JSON.stringify(d.archive));
+    if(d.schedule)localStorage.setItem(SK,JSON.stringify(d.schedule));
     alert('読み込みました');location.reload();
   }catch(err){alert('このファイルは読み込めませんでした');}};rd.readAsText(f);
 });
 /* ---- 過去の戦績アーカイブ ---- */
-const AK='miracl_archive_v1';
 let archive=[]; try{archive=JSON.parse(localStorage.getItem(AK))||[]}catch(e){}
 let viewIdx=null;
 function saveArchive(){localStorage.setItem(AK,JSON.stringify(archive));}
 function snapshotIfAny(){
   const res=JSON.parse(localStorage.getItem(RK)||'{}');
   if(Object.keys(res).length===0)return false;
-  const def='miracl杯 '+new Date().toLocaleDateString('ja-JP');
+  const def='miracle杯 '+new Date().toLocaleDateString('ja-JP');
   const name=prompt('この大会の戦績を「過去の戦績」に残します。\nアーカイブ名（大会名など）:',def);
   archive.push({name:(name&&name.trim())||def, savedAt:new Date().toISOString(),
-    config:JSON.parse(localStorage.getItem(CK)||'{}'),
+    config:Object.assign({},cfg),
     names:JSON.parse(localStorage.getItem(NK)||'{}'), results:res});
   saveArchive();
   return true;
@@ -295,13 +357,14 @@ function clearAll(){
   if(!confirm('全データ（チーム名・試合結果・大会設定）を消して初期状態に戻します。\n※試合結果が入っていれば、戦績は「📚 過去の戦績」に自動で残ります。\n\nクリアしますか？'))return;
   if(!confirm('この操作は元に戻せません。本当によろしいですか？'))return;
   snapshotIfAny();
-  [CK,NK,RK,'miracl_results_v1'].forEach(k2=>localStorage.removeItem(k2));
+  [CK,NK,RK,SK,'miracl_config_v1','miracl_names_v2','miracl_results_v2'].forEach(k2=>localStorage.removeItem(k2));
   alert('クリアしました（戦績はアーカイブに保存済み）');
   location.reload();
 }
 function renderAll(){
+  document.getElementById('ruleline').textContent=`${cfg.pt||15}点マッチ（デュースは${cfg.cap||17}点打ち切り）`;
   if(viewIdx!=null&&archive[viewIdx]){
-    const a=archive[viewIdx];
+    const a=archive[viewIdx]; a.config=Object.assign({},DEF,a.config||{});
     document.getElementById('tabs').innerHTML='';
     document.getElementById('stand').innerHTML=
       `<div class="card" style="background:#f5f0ff;border-color:#c9b8ef">
