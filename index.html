@@ -65,8 +65,8 @@ thead th{background:var(--head);color:#fff;font-weight:600;font-size:13px}
  .pn-no{font-size:15px;font-weight:800;width:22px;text-align:right}
  .pn-name{font-size:15px;font-weight:600;min-width:42mm}
  .cp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:5mm;border-bottom:4px solid;padding-bottom:3mm}
- .cp-court{font-size:26px;font-weight:800}
- .cp-tour{font-size:15px;color:var(--rest);font-weight:600}
+ .cp-court{font-size:26px;font-weight:800;white-space:nowrap}
+ .cp-tour{font-size:12.5px;color:var(--rest);font-weight:600;text-align:right;margin-left:6mm}
  .pp table{font-size:13.5px}
  .pp th,.pp td{padding:5px 6px}
  .pp .ref{font-size:11px}
@@ -74,6 +74,23 @@ thead th{background:var(--head);color:#fff;font-weight:600;font-size:13px}
  .star .gc{height:44px}
  body.cards-mode #printpages{display:none}
  body.cards-mode #printcards{display:block}
+}
+/* ===== 印刷は白黒（色は使わず、白・灰色・黒だけ） ===== */
+@media print{
+ :root{--ink:#000;--head:#000;--accent:#000;--rest:#333;--line:#777;--w:#fff;--m1:#fff;--m2:#fff;--wb:#000;--m1b:#000;--m2b:#000}
+ #printpages *,#printcards *{color:#000!important}
+ .cp-head,.pn-head,.ch-top{border-color:#000!important}
+ .pp thead th,.pp .gh,.ch-score thead th{background:#e6e6e6!important;color:#000!important;border:1px solid #000!important}
+ .ch-score thead th:first-child{background:#fff!important}
+ .pp th,.pp td{border-color:#777}
+ .pp .slot,.pp .time,.pp .mt,.pp .mt.empty{background:#fff!important}
+ .pp .simrow th,.pp .simrow td{background:#e6e6e6!important}
+ .badge{background:#fff!important;border:1px solid #000;color:#000!important}
+ .star .diag{background:#bdbdbd!important}
+ .star .tot,.star .rank{background:#fff!important}
+ .ch-score tbody th,.ch-score tr.sc th{background:#f0f0f0!important}
+ .ch-score th,.ch-score td{border-color:#000!important}
+ .cutline{border-color:#000}.cutline::before{color:#000}
 }
 /* ===== 対戦カード (A4に同一カード2部 → 切ってA5) ===== */
 #printcards{display:none}
@@ -160,7 +177,7 @@ table.ch-score{width:100%;border-collapse:collapse;table-layout:fixed}
 </div>
 <script>
 const CK='miracle_config_v1', NK='miracle_names_v2', RK='miracle_results_v2', SK='miracle_schedule_v1', AK='miracle_archive_v1';
-const ruleTxt=()=>`${cfg.pt}点マッチ・デュースは${cfg.cap}点打ち切り`;
+const ruleTxt=()=>(+cfg.cap>+cfg.pt)?`${cfg.pt}点マッチ・デュースは${cfg.cap}点打ち切り`:`${cfg.pt}点マッチ・デュースなし`;
 const LEAGUES=[
  {key:'w', name:'女子',   court:'コートA', color:'#e8407a', cell:'cw'},
  {key:'m1',name:'混合①', court:'コートB', color:'#2f6fe0', cell:'cm1'},
@@ -360,7 +377,7 @@ function renderPrint(){
       <span class="cp-court" style="color:${L.color}">${L.court}<small style="font-size:15px;margin-left:8px;color:var(--ink)">基本：${L.name}</small></span>
       <span class="cp-tour">miracle杯 進行表（1試合${cfg.dur}分・${ruleTxt()}）</span></div>
       <table><thead><tr><th style="width:70px">枠</th><th style="width:60px">時刻</th><th>対戦</th><th style="width:110px">審判</th></tr></thead><tbody>${rows}</tbody></table>
-      <p class="note">※ピンク帯＝女子一斉枠（このコートも女子の試合・審判は混合チーム）。[混合①][混合②]表記はこのコートで消化する他リーグの試合。</p></div>`;
+      <p class="note">※灰色の帯＝女子一斉枠（このコートも女子の試合・審判は混合チーム）。[混合①][混合②]表記はこのコートで消化する他リーグの試合。</p></div>`;
   });
   /* 星取表ページ */
   LEAGUES.forEach(L=>{
@@ -442,6 +459,8 @@ function rebuild(){buildSchedule();saveSchedule();renderSched();renderStars();re
 /* ---- 各種ボタン ---- */
 function openResults(){
   const url=new URL('miracle-results.html', location.href).href;
+  const standalone=window.navigator.standalone||window.matchMedia('(display-mode: standalone)').matches;
+  if(standalone){location.href=url;return;}
   const w=window.open(url,'miracleResults','width=820,height=900,scrollbars=yes,resizable=yes');
   if(!w) alert('ポップアップがブロックされました。ブラウザのポップアップ許可をオンにするか、miracle-results.html を直接開いてください。');
 }
@@ -483,6 +502,12 @@ function clearAll(){
   alert('クリアしました（戦績はアーカイブに保存済み）');
   location.reload();
 }
+/* 結果アプリ(別ウィンドウ)で名前の変更・全データクリア・読込があったら取り込む */
+window.addEventListener('storage',e=>{
+  if(e.key===null||(e.key===CK&&e.newValue===null)||(e.key===RK&&e.newValue===null)){location.reload();return;}
+  if(e.key===NK){try{names=JSON.parse(e.newValue)||{}}catch(err){names={}}renderSched();renderStars();renderNames();renderPrint();}
+  if(e.key===CK){try{const c=JSON.parse(e.newValue);if(c&&JSON.stringify(c)!==JSON.stringify(cfg)){location.reload();}}catch(err){}}
+});
 localStorage.setItem(CK,JSON.stringify(cfg));bindCfg();rebuild();
 if(location.search.indexOf('cards')>=0){renderCards();document.body.classList.add('cards-mode');}
 </script></body></html>

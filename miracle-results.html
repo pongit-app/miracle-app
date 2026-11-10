@@ -44,12 +44,23 @@ thead th{background:var(--head);color:#fff;font-weight:600;font-size:12.5px}
 .abtn{background:var(--head);color:#fff;border:0;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;margin:0 2px}
 .abtn.del{background:#c0392b}
 @page{size:A4 portrait;margin:0} /* 余白0でブラウザのURL/日付印字を消す */
-@media print{body{background:#fff;padding:12mm}.noprint{display:none}.card{box-shadow:none;page-break-inside:avoid}}
+@media print{body{background:#fff;padding:12mm}.noprint{display:none}.card{box-shadow:none;page-break-inside:avoid}
+ /* 印刷は白黒 */
+ body,body *{color:#000!important}
+ .card,h2{border-color:#000!important}
+ th,td{border-color:#777!important}
+ thead th{background:#e6e6e6!important;border-color:#000!important}
+ .r1,.r2,.r3,.done{background:#fff!important}
+ .medal{display:none}
+ .mt-list input{border-color:#777!important;background:#fff!important}
+ #warnline{display:none}
+}
 </style></head><body><div class="wrap">
 <h1 class="title"><b>miracle</b>杯 <span style="font-size:20px">結果・順位</span></h1>
 <p class="sub">2セット制・<span id="ruleline"></span> ／ 順位は「① 獲得セット数 → ② 直接対決 → ③ 得失点差」で自動計算 ／ チーム数は進行表アプリの設定に連動</p>
 <div class="tabs" id="tabs"></div>
 <div class="bar noprint">
+  <button onclick="backToCup()" style="background:var(--accent)">← 進行表に戻る</button>
   <button onclick="window.print()">🖨 順位表を印刷/PDF</button>
   <button onclick="exportData()">💾 データ保存</button>
   <button onclick="document.getElementById('imp').click()">📂 データ読込</button>
@@ -119,10 +130,11 @@ function timeOf(i){
 function setStatus(x,y){
   if(x===''||y===''||x==null||y==null)return 'empty';
   x=+x;y=+y; if(x===y)return 'tie';
-  const pt=+cfg.pt||15, cap=+cfg.cap||17, w=Math.max(x,y), l=Math.min(x,y);
-  if(w===pt&&l<=pt-2)return 'ok';
-  if(w>pt&&w<cap&&w-l===2)return 'ok';
-  if(w===cap&&cap>pt&&(w-l===2||w-l===1))return 'ok';
+  const pt=+cfg.pt||15, cap=Math.max(+cfg.cap||17,pt), w=Math.max(x,y), l=Math.min(x,y);
+  if(w<pt)return 'bad';
+  if(w===pt)return (l<=pt-2||cap===pt)?'ok':'bad';   /* デュースなしなら15-14も成立 */
+  if(w<cap)return w-l===2?'ok':'bad';
+  if(w===cap)return (w-l===1||w-l===2)?'ok':'bad';
   return 'bad';
 }
 
@@ -219,11 +231,11 @@ function renderWarn(){
   let tie=0,bad=0;
   orderedMatches(cur).forEach(m=>{const r=results[rkey(cur,m.p)]||{};
     [['s1a','s1b'],['s2a','s2b']].forEach(([fa,fb])=>{const st=setStatus(r[fa],r[fb]);if(st==='tie')tie++;if(st==='bad')bad++;});});
-  const pt=+cfg.pt||15,cap=+cfg.cap||17;
+  const pt=+cfg.pt||15,cap=Math.max(+cfg.cap||17,pt);
   if(!tie&&!bad){el.className='warn ok';el.textContent='入力済みのセット得点はすべてルール通りです。';return;}
   el.className='warn';
   el.innerHTML=(tie?`<b>赤：同点のセットが${tie}つ</b>あります（同点はどちらのセットにも数えません）。 `:'')+
-    (bad?`<b>黄：ルール外／未完了のセットが${bad}つ</b>あります（${pt}点先取・2点差、${pt-1}-${pt-1}からデュース、${cap}点で打ち切り）。得点はそのまま集計します。`:'');
+    (bad?`<b>黄：ルール外／未完了のセットが${bad}つ</b>あります（${cap>pt?`${pt}点先取・2点差、${pt-1}-${pt-1}からデュース、${cap}点で打ち切り`:`${pt}点先取・デュースなし`}）。得点はそのまま集計します。`:'');
 }
 function renderMatches(){
   const L=LEAGUES.find(l=>l.key===cur);const ms=orderedMatches(cur);
@@ -361,8 +373,27 @@ function clearAll(){
   alert('クリアしました（戦績はアーカイブに保存済み）');
   location.reload();
 }
+function backToCup(){
+  if(window.opener&&!window.opener.closed){try{window.opener.focus();}catch(e){} window.close(); return;}
+  /* 公開版(GitHub Pages)は進行表が index.html、手元では miracle-cup.html */
+  location.href=location.hostname.endsWith('github.io')?'./':'miracle-cup.html';
+}
+/* 進行表アプリ(別ウィンドウ)で名前・設定・クリアの変更があったら、古いデータで上書きしないよう読み直す */
+window.addEventListener('storage',e=>{
+  if(e.key!==null&&![CK,NK,RK,SK,AK].includes(e.key))return;
+  cfg=Object.assign({},DEF); try{Object.assign(cfg,JSON.parse(localStorage.getItem(CK))||{})}catch(err){}
+  try{names=JSON.parse(localStorage.getItem(NK))||{}}catch(err){names={}}
+  try{results=JSON.parse(localStorage.getItem(RK))||{}}catch(err){results={}}
+  try{sched=JSON.parse(localStorage.getItem(SK))}catch(err){sched=null}
+  try{archive=JSON.parse(localStorage.getItem(AK))||[]}catch(err){archive=[]}
+  if(viewIdx!=null&&!archive[viewIdx])viewIdx=null;
+  const active=document.activeElement; const ak=active&&active.dataset&&active.dataset.k, af=active&&active.dataset&&active.dataset.f;
+  renderAll();
+  if(ak){const el=document.querySelector(`#matches input[data-k="${ak}"][data-f="${af}"]`);if(el)el.focus();}
+});
 function renderAll(){
-  document.getElementById('ruleline').textContent=`${cfg.pt||15}点マッチ（デュースは${cfg.cap||17}点打ち切り）`;
+  if(size(cur)<2)cur='w';
+  document.getElementById('ruleline').textContent=(+cfg.cap>+cfg.pt)?`${cfg.pt}点マッチ（デュースは${cfg.cap}点打ち切り）`:`${cfg.pt}点マッチ（デュースなし）`;
   if(viewIdx!=null&&archive[viewIdx]){
     const a=archive[viewIdx]; a.config=Object.assign({},DEF,a.config||{});
     document.getElementById('tabs').innerHTML='';
