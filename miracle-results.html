@@ -80,9 +80,11 @@ thead th{background:var(--head);color:#fff;font-weight:600;font-size:12.5px}
 </div>
 <script>
 const CK='miracle_config_v1', NK='miracle_names_v2', RK='miracle_results_v2', SK='miracle_schedule_v1', AK='miracle_archive_v1';
-const DEF={w:8,m1:7,m2:7,start:'09:00',dur:25,pt:15,cap:17};
+const DEF={w:8,m1:7,m2:7,start:'09:00',dur:25,pt:15,cap:15};
 let cfg=Object.assign({},DEF);
 try{Object.assign(cfg,JSON.parse(localStorage.getItem(CK))||{})}catch(e){}
+/* チラシ通り「デュースなし」に一度だけ切り替える（以前の初期値17点がこの端末に保存されている場合の対策） */
+if(!localStorage.getItem('miracle_nodeuce_v1')){cfg.cap=cfg.pt;localStorage.setItem(CK,JSON.stringify(cfg));localStorage.setItem('miracle_nodeuce_v1','1');}
 const LEAGUES=[
  {key:'w', name:'女子',   color:'#e8407a'},
  {key:'m1',name:'混合①', color:'#2f6fe0'},

@@ -136,7 +136,7 @@ table.ch-score{width:100%;border-collapse:collapse;table-layout:fixed}
     <div class="grp"><label>開始時刻</label><input id="cstart" type="time"></div>
     <div class="grp"><label>1試合（分）</label><input id="cdur" type="number" min="5" max="60"></div>
     <div class="grp"><label>セット得点</label><input id="cpt" type="number" min="5" max="30"></div>
-    <div class="grp"><label>デュース上限</label><input id="ccap" type="number" min="5" max="40"></div>
+    <div class="grp"><label>デュース上限<br><small>（得点と同じ＝なし）</small></label><input id="ccap" type="number" min="5" max="40"></div>
   </div>
   <p class="note" id="cfgsummary" style="text-align:center"></p>
 </div>
@@ -186,8 +186,10 @@ const LEAGUES=[
  {key:'m1',name:'混合①', court:'コートB', color:'#2f6fe0', cell:'cm1'},
  {key:'m2',name:'混合②', court:'コートC', color:'#1f9d57', cell:'cm2'},
 ];
-let cfg={w:8,m1:7,m2:7,start:'09:00',dur:25,pt:15,cap:17};
+let cfg={w:8,m1:7,m2:7,start:'09:00',dur:25,pt:15,cap:15};
 try{Object.assign(cfg,JSON.parse(localStorage.getItem(CK))||{})}catch(e){}
+/* チラシ通り「デュースなし」に一度だけ切り替える（以前の初期値17点がこの端末に保存されている場合の対策） */
+if(!localStorage.getItem('miracle_nodeuce_v1')){cfg.cap=cfg.pt;localStorage.setItem(CK,JSON.stringify(cfg));localStorage.setItem('miracle_nodeuce_v1','1');}
 let names={}; try{names=JSON.parse(localStorage.getItem(NK))||{}}catch(e){}
 const k=(lg,t)=>lg+':'+t;
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
