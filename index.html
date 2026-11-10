@@ -35,8 +35,10 @@ thead th{background:var(--head);color:#fff;font-weight:600;font-size:13px}
 .sw{width:14px;height:14px;border-radius:3px;display:inline-block}
 .star{table-layout:fixed}
 .star th,.star td{word-break:break-word;overflow-wrap:break-word;padding:4px 3px}
-.star .corner{width:12%}
-.star .tot,.star .rank{width:8%}
+.star .corner{width:15%}
+.star thead .gh{font-size:10.5px;letter-spacing:-.2px;word-break:normal;overflow-wrap:anywhere}
+.star tbody .gh{font-size:11.5px;word-break:normal;overflow-wrap:anywhere}
+.star .tot,.star .rank{width:7%}
 .star td.gc{height:38px}.star .diag{background:#e7ebf3}.star .tot,.star .rank{background:#fbeef4;font-size:12px}
 .gh{background:var(--head);color:#fff;min-width:0;font-size:12.5px;line-height:1.3}
 .bar{text-align:center;margin-bottom:16px}
@@ -71,7 +73,8 @@ thead th{background:var(--head);color:#fff;font-weight:600;font-size:13px}
  .pp th,.pp td{padding:5px 6px}
  .pp .ref{font-size:11px}
  .pp .note{font-size:11px;line-height:1.6}
- .star .gc{height:44px}
+ .star td.gc{height:58px}
+ .star thead .gh{font-size:9.5px;padding:4px 1px;letter-spacing:-.3px}
  body.cards-mode #printpages{display:none}
  body.cards-mode #printcards{display:block}
 }
@@ -318,7 +321,7 @@ function renderStars(){
       for(let c=1;c<=n;c++)tds+= r===c?'<td class="diag"></td>':'<td class="gc"></td>';
       body+=`<tr><th class="gh">${esc(nm(L.key,r))}</th>${tds}<td class="gc tot"></td><td class="gc rank"></td></tr>`;
     }
-    html+=`<div class="card star-card"><h2 style="border-color:${L.color}">${L.name} 星取表（${n}チーム 総当たり）</h2><table class="star"><thead><tr><th class="gh corner"></th>${head}<th class="gh" style="width:8%">勝</th><th class="gh" style="width:9%">順位</th></tr></thead><tbody>${body}</tbody></table></div>`;
+    html+=`<div class="card star-card"><h2 style="border-color:${L.color}">${L.name} 星取表（${n}チーム 総当たり）</h2><table class="star"><thead><tr><th class="gh corner"></th>${head}<th class="gh" style="width:7%">勝点</th><th class="gh" style="width:7%">順位</th></tr></thead><tbody>${body}</tbody></table></div>`;
   });
   document.getElementById('starwrap').innerHTML=html;
 }
@@ -391,7 +394,7 @@ function renderPrint(){
     html+=`<div class="pp"><div class="cp-head" style="border-color:${L.color}">
       <span class="cp-court" style="color:${L.color}">${L.name} 星取表</span>
       <span class="cp-tour">miracle杯（${n}チーム 総当たり）</span></div>
-      <table class="star"><thead><tr><th class="gh corner"></th>${head}<th class="gh" style="width:8%">勝</th><th class="gh" style="width:9%">順位</th></tr></thead><tbody>${body}</tbody></table></div>`;
+      <table class="star"><thead><tr><th class="gh corner"></th>${head}<th class="gh" style="width:7%">勝点</th><th class="gh" style="width:7%">順位</th></tr></thead><tbody>${body}</tbody></table></div>`;
   });
   document.getElementById('printpages').innerHTML=html;
 }
