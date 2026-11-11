@@ -195,6 +195,8 @@ const k=(lg,t)=>lg+':'+t;
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const nm=(lg,t)=>names[k(lg,t)]||(''+t);
 const fullnm=(lg,t)=>names[k(lg,t)]||('チーム'+t);
+/* 星取表の見出し用: 「miracle③（ミナミ）」のようなカッコ書きはカッコの前で改行 */
+const brk=s=>esc(s).replace(/（/g,'<br>（');
 const size=lg=>({w:cfg.w,m1:cfg.m1,m2:cfg.m2})[lg];
 
 /* ---- 総当たり生成 (サークル法) ---- */
@@ -316,12 +318,12 @@ function renderStars(){
   let html='';
   LEAGUES.forEach(L=>{
     const n=size(L.key); if(n<2){return;}
-    let head=''; for(let t=1;t<=n;t++)head+=`<th class="gh">${esc(nm(L.key,t))}</th>`;
+    let head=''; for(let t=1;t<=n;t++)head+=`<th class="gh">${brk(nm(L.key,t))}</th>`;
     let body='';
     for(let r=1;r<=n;r++){
       let tds='';
       for(let c=1;c<=n;c++)tds+= r===c?'<td class="diag"></td>':'<td class="gc"></td>';
-      body+=`<tr><th class="gh">${esc(nm(L.key,r))}</th>${tds}<td class="gc tot"></td><td class="gc rank"></td></tr>`;
+      body+=`<tr><th class="gh">${brk(nm(L.key,r))}</th>${tds}<td class="gc tot"></td><td class="gc rank"></td></tr>`;
     }
     html+=`<div class="card star-card"><h2 style="border-color:${L.color}">${L.name} 星取表（${n}チーム 総当たり）</h2><table class="star"><thead><tr><th class="gh corner"></th>${head}<th class="gh" style="width:7%">勝点</th><th class="gh" style="width:7%">順位</th></tr></thead><tbody>${body}</tbody></table></div>`;
   });
@@ -352,7 +354,7 @@ function renderPrint(){
   let html='';
   /* 1ページ目: タイトル+チーム名 */
   html+='<div class="pp"><div class="pp-title"><div class="t1"><b>miracle</b>杯</div><div class="t2">'+
-    LEAGUES.filter(L=>size(L.key)>=2).map(L=>`${L.name} ${size(L.key)}チーム`).join(' ／ ')+`（1試合${cfg.dur}分・2セット・${ruleTxt()}）</div></div><div class="pn-grid">`+
+    LEAGUES.filter(L=>size(L.key)>=2).map(L=>`${L.name} ${size(L.key)}チーム`).join(' ／ ')+`<br>1試合${cfg.dur}分・2セット・${ruleTxt()}</div></div><div class="pn-grid">`+
     LEAGUES.map(L=>{
       const n=size(L.key); if(n<2)return '';
       let list='';
@@ -387,11 +389,11 @@ function renderPrint(){
   /* 星取表ページ */
   LEAGUES.forEach(L=>{
     const n=size(L.key); if(n<2)return;
-    let head=''; for(let t=1;t<=n;t++)head+=`<th class="gh">${esc(nm(L.key,t))}</th>`;
+    let head=''; for(let t=1;t<=n;t++)head+=`<th class="gh">${brk(nm(L.key,t))}</th>`;
     let body='';
     for(let r=1;r<=n;r++){
       let tds=''; for(let c=1;c<=n;c++)tds+= r===c?'<td class="diag"></td>':'<td class="gc"></td>';
-      body+=`<tr><th class="gh">${esc(nm(L.key,r))}</th>${tds}<td class="gc tot"></td><td class="gc rank"></td></tr>`;
+      body+=`<tr><th class="gh">${brk(nm(L.key,r))}</th>${tds}<td class="gc tot"></td><td class="gc rank"></td></tr>`;
     }
     html+=`<div class="pp"><div class="cp-head" style="border-color:${L.color}">
       <span class="cp-court" style="color:${L.color}">${L.name} 星取表</span>
