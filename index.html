@@ -73,6 +73,7 @@ thead th{background:var(--head);color:#fff;font-weight:600;font-size:13px}
  .pp table{font-size:13.5px}
  .pp th,.pp td{padding:5px 6px}
  .pp .ref{font-size:11px}
+ .pp .ref.refs{font-size:11.5px;line-height:1.3}
  .pp .note{font-size:11px;line-height:1.6}
  .star td.gc{height:58px}
  .pp.starpp{page:star}
@@ -174,8 +175,8 @@ table.ch-score{width:100%;border-collapse:collapse;table-layout:fixed}
 <div class="card" id="schedcard">
   <h2>進行表（画面用・全コートまとめ）</h2>
   <div id="schedwrap" style="overflow-x:auto"></div>
-  <p class="note">※「審 N」＝そのコートで審判をするチーム番号（女子ソロはAの休みチーム、混合はそのリーグの休みチーム）。<br>
-  ※<b style="color:var(--accent)">女子一斉</b>の枠はA・B・C全部で女子。<b>審判は混合チームが担当</b>するので「審：混合」。一斉枠は3コートの終了時刻がそろうよう自動配置します。<br>
+  <p class="note">※審判は1試合2チーム（審判①・審判②）。そのリーグで休みのチームから、試合中・同じ時間の別の審判と重ならないよう自動で振り分けます。回数はなるべく均等にし、2枠続けての審判は避けます。<br>
+  ※<b style="color:var(--accent)">女子一斉</b>の枠はA・B・C全部で女子。<b>審判は混合チームが担当</b>（チーム名に（混①）（混②）の印）。一斉枠は3コートの終了時刻がそろうよう自動配置します。<br>
   ※どこかのリーグが先に終わったら、空いたコートで残り試合を消化します。</p>
 </div>
 
@@ -274,27 +275,50 @@ function buildSchedule(){
     }
     t++;
   }
-  /* ---- 審判割当 ---- */
-  const refCnt={w:{},m1:{},m2:{}};
+  /* ---- 審判割当（1試合に審判2チーム：審判①・審判②） ----
+     同じ枠で「試合中のチーム」「同じ枠で別コートの審判」「同じ試合のもう1人」とは重ならない。
+     通常枠＝その試合のリーグの休みチーム（足りなければ他リーグの休みチーム）。
+     女子一斉枠＝混合チーム（足りなければ休みの女子チーム）。
+     回数が少ないチーム優先、2枠連続の審判はなるべく避ける。 */
+  const refCnt={}, LG=['w','m1','m2'];
+  let prevRefs=new Set();
   slots.forEach(sl=>{
-    if(sl.sim){sl.cells.forEach(c=>{if(c)c.ref='mix';});return;}
-    const playing={w:new Set(),m1:new Set(),m2:new Set()};
-    sl.cells.forEach(c=>{if(c){playing[c.lg].add(c.m[0]);playing[c.lg].add(c.m[1]);}});
-    const usedRef={w:new Set(),m1:new Set(),m2:new Set()};
+    const playing=new Set();
+    sl.cells.forEach(c=>{if(c){playing.add(c.lg+':'+c.m[0]);playing.add(c.lg+':'+c.m[1]);}});
+    const used=new Set();
     sl.cells.forEach(c=>{
       if(!c)return;
-      const n=size(c.lg); let best=null,bestCnt=1e9;
-      for(let x=1;x<=n;x++){
-        if(playing[c.lg].has(x)||usedRef[c.lg].has(x))continue;
-        const cnt=refCnt[c.lg][x]||0;
-        if(cnt<bestCnt){bestCnt=cnt;best=x;}
+      const prefer=sl.sim?['m1','m2']:[c.lg];
+      const pools=[prefer, LG.filter(l=>!prefer.includes(l))];
+      c.refs=[];
+      for(let r=0;r<2;r++){
+        let best=null,bestCost=1e9;
+        for(const pool of pools){
+          for(const lg of pool){
+            for(let x=1;x<=size(lg);x++){
+              const key=lg+':'+x;
+              if(playing.has(key)||used.has(key))continue;
+              const cost=(refCnt[key]||0)*100+(prevRefs.has(key)?10:0);
+              if(cost<bestCost){bestCost=cost;best={lg,t:x};}
+            }
+          }
+          if(best)break;
+        }
+        if(best){const key=best.lg+':'+best.t;used.add(key);refCnt[key]=(refCnt[key]||0)+1;}
+        c.refs.push(best);
       }
-      if(best!=null){c.ref=best;usedRef[c.lg].add(best);refCnt[c.lg][best]=(refCnt[c.lg][best]||0)+1;}
-      else c.ref='';
     });
+    prevRefs=used;
   });
 }
 
+const LGTAG={w:'女子',m1:'混①',m2:'混②'};
+/* 審判チーム名。試合と別リーグのチームなら（混①）などを付ける */
+function refName(c,r,full){
+  if(!r)return '—';
+  const n=full?fullnm(r.lg,r.t):nm(r.lg,r.t);
+  return r.lg!==c.lg?`${n}（${LGTAG[r.lg]}）`:n;
+}
 /* ---- 表示ユーティリティ ---- */
 function timeOf(i){
   const [h,m]=(cfg.start||'09:00').split(':').map(Number);
@@ -304,9 +328,7 @@ function timeOf(i){
 function cellHTML(c){
   if(!c)return '<td class="mt empty">—</td>';
   const L=LEAGUES.find(l=>l.key===c.lg);
-  const ref=c.ref==='mix'?'<span class="ref free">審：混合</span>'
-    :c.ref===''?'<span class="ref">審 —</span>'
-    :`<span class="ref">審 <b>${esc(nm(c.lg,c.ref))}</b></span>`;
+  const ref=`<span class="ref">審判① <b>${esc(refName(c,c.refs[0]))}</b>　審判② <b>${esc(refName(c,c.refs[1]))}</b></span>`;
   return `<td class="mt ${L.cell}">${esc(nm(c.lg,c.m[0]))}<span class="vs">対</span>${esc(nm(c.lg,c.m[1]))}<br>${ref}</td>`;
 }
 function renderSched(){
@@ -376,14 +398,12 @@ function renderPrint(){
     slots.forEach((sl,i)=>{
       const c=sl.cells[ci];
       let cell,refc;
-      if(!c){cell='<td class="mt empty">—</td>';refc='<td class="ref">—</td>';}
+      if(!c){cell='<td class="mt empty">—</td>';refc='<td class="ref refs">—</td><td class="ref refs">—</td>';}
       else{
         const CL=LEAGUES.find(x=>x.key===c.lg);
         const other=c.lg!==L.key?` <small style="color:${CL.color};font-weight:700">[${CL.name}]</small>`:'';
         cell=`<td class="mt ${CL.cell}">${esc(nm(c.lg,c.m[0]))}<span class="vs">対</span>${esc(nm(c.lg,c.m[1]))}${other}</td>`;
-        refc=c.ref==='mix'?'<td class="ref free">審：混合</td>'
-          :c.ref===''?'<td class="ref">—</td>'
-          :`<td class="ref"><b>${esc(nm(c.lg,c.ref))}</b>${c.lg!==L.key?'':''}</td>`;
+        refc=`<td class="ref refs"><b>${esc(refName(c,c.refs[0]))}</b></td><td class="ref refs"><b>${esc(refName(c,c.refs[1]))}</b></td>`;
       }
       const tag=sl.sim?'<span class="badge">女子一斉</span>':'';
       rows+=`<tr class="${sl.sim?'simrow':''}"><th class="slot">第${i+1}枠${tag}</th><td class="time">${timeOf(i)}</td>${cell}${refc}</tr>`;
@@ -391,8 +411,8 @@ function renderPrint(){
     html+=`<div class="pp"><div class="cp-head" style="border-color:${L.color}">
       <span class="cp-court" style="color:${L.color}">${L.court}<small style="font-size:15px;margin-left:8px;color:var(--ink)">基本：${L.name}</small></span>
       <span class="cp-tour">miracle杯 進行表（1試合${cfg.dur}分・${ruleTxt()}）</span></div>
-      <table><thead><tr><th style="width:70px">枠</th><th style="width:60px">時刻</th><th>対戦</th><th style="width:110px">審判</th></tr></thead><tbody>${rows}</tbody></table>
-      <p class="note">※灰色の帯＝女子一斉枠（このコートも女子の試合・審判は混合チーム）。[混合①][混合②]表記はこのコートで消化する他リーグの試合。</p></div>`;
+      <table><thead><tr><th style="width:70px">枠</th><th style="width:60px">時刻</th><th>対戦</th><th style="width:125px">審判①</th><th style="width:125px">審判②</th></tr></thead><tbody>${rows}</tbody></table>
+      <p class="note">※審判は1試合2チーム（審判①・審判②）。（混①）などは別リーグのチームが審判をする印。<br>※灰色の帯＝女子一斉枠（このコートも女子の試合・審判は混合チーム）。[混合①][混合②]表記はこのコートで消化する他リーグの試合。</p></div>`;
   });
   /* 星取表ページ */
   LEAGUES.forEach(L=>{
@@ -420,13 +440,13 @@ function renderCards(){
       const L=LEAGUES.find(l=>l.key===c.lg);
       counter[c.lg]++;
       const court=['コートA','コートB','コートC'][ci];
-      const refTxt=c.ref==='mix'?'混合チーム':(c.ref===''?'（当日決定）':esc(fullnm(c.lg,c.ref)));
+      const refTxt=`審判①：<b>${esc(refName(c,c.refs[0],true))}</b>　審判②：<b>${esc(refName(c,c.refs[1],true))}</b>`;
       const half=`<div class="chalf">
         <div class="ch-top"><span class="ch-brand"><b>miracle</b>杯 対戦カード</span>
           <span class="ch-meta" style="color:${L.color}">${L.name} 第${counter[c.lg]}試合</span>
           <span class="ch-meta2">${court}・第${i+1}枠・${timeOf(i)}〜</span></div>
         <div class="ch-vs"><span class="t">${esc(fullnm(c.lg,c.m[0]))}</span><span class="vs">対</span><span class="t">${esc(fullnm(c.lg,c.m[1]))}</span></div>
-        <div class="ch-ref">審判チーム：<b>${refTxt}</b>　<span style="color:var(--rest);font-size:12px">2セット制・${ruleTxt()}</span></div>
+        <div class="ch-ref">${refTxt}<br><span style="color:var(--rest);font-size:12px">2セット制・${ruleTxt()}</span></div>
         <table class="ch-score"><thead><tr><th></th><th>${esc(fullnm(c.lg,c.m[0]))}</th><th>${esc(fullnm(c.lg,c.m[1]))}</th></tr></thead>
         <tbody><tr><th>1セット目</th><td></td><td></td></tr>
         <tr><th>2セット目</th><td></td><td></td></tr>
@@ -467,7 +487,7 @@ function bindCfg(){
 }
 function saveSchedule(){
   const sc={w:[],m1:[],m2:[]};
-  slots.forEach((sl,i)=>sl.cells.forEach((c,ci)=>{ if(c)sc[c.lg].push({a:c.m[0],b:c.m[1],slot:i+1,court:'ABC'[ci],ref:c.ref}); }));
+  slots.forEach((sl,i)=>sl.cells.forEach((c,ci)=>{ if(c)sc[c.lg].push({a:c.m[0],b:c.m[1],slot:i+1,court:'ABC'[ci],refs:c.refs}); }));
   localStorage.setItem(SK,JSON.stringify({cfg:{w:cfg.w,m1:cfg.m1,m2:cfg.m2},lg:sc}));
 }
 function rebuild(){buildSchedule();saveSchedule();renderSched();renderStars();renderNames();renderPrint();}
