@@ -457,7 +457,8 @@ function renderPrint(){
 /* ---- 対戦カード (1試合=A4に2部、切ってA5) ---- */
 function renderCards(){
   const counter={w:0,m1:0,m2:0};
-  let html='';
+  /* カードはリーグごと（女子→混合①→混合②）にまとめ、その中は第1試合から順に並べる */
+  const pages={w:[],m1:[],m2:[]};
   slots.forEach((sl,i)=>{
     sl.cells.forEach((c,ci)=>{
       if(!c)return;
@@ -477,10 +478,10 @@ function renderCards(){
         <tr class="sc"><th>セットカウント</th><td></td><td></td></tr></tbody></table>
         <div class="ch-sign"><span>主審サイン：<span class="line"></span></span><span>勝者チームサイン：<span class="line"></span></span></div>
       </div>`;
-      html+=`<div class="cardpage">${half}<div class="cutline"></div>${half}</div>`;
+      pages[c.lg].push(`<div class="cardpage">${half}<div class="cutline"></div>${half}</div>`);
     });
   });
-  document.getElementById('printcards').innerHTML=html;
+  document.getElementById('printcards').innerHTML=LEAGUES.map(L=>pages[L.key].join('')).join('');
 }
 function printCards(){
   renderCards();
