@@ -118,7 +118,7 @@ thead th{background:var(--head);color:#fff;font-weight:600;font-size:13px}
  .ch-score th,.ch-score td{border-color:#000!important}
  .cutline{border-color:#000}.cutline::before{color:#000}
 }
-/* ===== 対戦カード (A4に同一カード2部 → 切ってA5) ===== */
+/* ===== 対戦カード (A4に2試合 → 切ってA5。控えなし) ===== */
 #printcards{display:none}
 .cardpage{height:296mm;padding:8mm 11mm;display:flex;flex-direction:column;page-break-after:always}
 .chalf{height:136mm;padding:6mm 8mm 0;display:flex;flex-direction:column}
@@ -167,7 +167,7 @@ table.ch-score{width:100%;border-collapse:collapse;table-layout:fixed}
 
 <div class="bar noprint">
   <button onclick="document.body.classList.remove('cards-mode');window.print()">🖨 印刷（A4・コート毎）</button>
-  <button onclick="printCards()">🎫 対戦カード印刷（A4に2部→A5）</button>
+  <button onclick="printCards()">🎫 対戦カード印刷（A4に2試合→切ってA5）</button>
   <button onclick="openResults()" style="background:var(--accent)">🏆 結果・順位アプリを開く</button>
   <button onclick="exportData()">💾 データ保存</button>
   <button onclick="document.getElementById('imp').click()">📂 データ読込</button>
@@ -454,10 +454,10 @@ function renderPrint(){
   });
   document.getElementById('printpages').innerHTML=html;
 }
-/* ---- 対戦カード (1試合=A4に2部、切ってA5) ---- */
+/* ---- 対戦カード (1試合=カード1枚、A4に2試合ずつ、切ってA5) ---- */
 function renderCards(){
   const counter={w:0,m1:0,m2:0};
-  /* カードはリーグごと（女子→混合①→混合②）にまとめ、その中は第1試合から順に並べる */
+  /* カードはリーグごと（女子→混合①→混合②）にまとめ、その中は第1試合から順に並べる。1試合=カード1枚 */
   const pages={w:[],m1:[],m2:[]};
   slots.forEach((sl,i)=>{
     sl.cells.forEach((c,ci)=>{
@@ -478,10 +478,16 @@ function renderCards(){
         <tr class="sc"><th>セットカウント</th><td></td><td></td></tr></tbody></table>
         <div class="ch-sign"><span>主審サイン：<span class="line"></span></span><span>勝者チームサイン：<span class="line"></span></span></div>
       </div>`;
-      pages[c.lg].push(`<div class="cardpage">${half}<div class="cutline"></div>${half}</div>`);
+      pages[c.lg].push(half);
     });
   });
-  document.getElementById('printcards').innerHTML=LEAGUES.map(L=>pages[L.key].join('')).join('');
+  /* 1ページに2試合（上・下）。控えは作らない。リーグが変わるときはページを改める（奇数なら下半分は空き） */
+  let html='';
+  LEAGUES.forEach(L=>{
+    const h=pages[L.key];
+    for(let i=0;i<h.length;i+=2) html+=`<div class="cardpage">${h[i]}<div class="cutline"></div>${h[i+1]||'<div class="chalf"></div>'}</div>`;
+  });
+  document.getElementById('printcards').innerHTML=html;
 }
 function printCards(){
   renderCards();
