@@ -39,7 +39,11 @@ thead th{background:var(--head);color:#fff;font-weight:600;font-size:13px}
 .star thead .gh{font-size:10.5px;letter-spacing:-.2px;word-break:normal;overflow-wrap:anywhere}
 .star tbody .gh{font-size:11.5px;word-break:normal;overflow-wrap:anywhere}
 .star .tot,.star .rank{width:7%}
-.star td.gc{height:38px}.star .diag{background:#e7ebf3}.star .tot,.star .rank{background:#fbeef4;font-size:12px}
+.star td.gc{height:38px}
+.star td.sc2{padding:0}
+.star td.sc2 span{display:block;line-height:19px;font-size:12px;color:var(--rest)}
+.star td.sc2 span+span{border-top:1px dotted var(--line)}
+.star .diag{background:#e7ebf3}.star .tot,.star .rank{background:#fbeef4;font-size:12px}
 .gh{background:var(--head);color:#fff;min-width:0;font-size:12.5px;line-height:1.3}
 .bar{text-align:center;margin-bottom:16px}
 .bar button{background:var(--head);color:#fff;border:0;border-radius:8px;padding:9px 16px;font-size:14px;cursor:pointer;margin:3px 4px}
@@ -78,6 +82,8 @@ thead th{background:var(--head);color:#fff;font-weight:600;font-size:13px}
  .star td.gc{height:58px}
  .pp.starpp{page:star}
  .pp.starpp .star td.gc{height:68px}
+ .pp.starpp .star td.sc2 span{line-height:33.5px;font-size:15px}
+ .star td.sc2 span+span{border-top:1px dotted #999}
  .pp.starpp .star thead .gh{font-size:11px;padding:6px 2px;letter-spacing:0;word-break:keep-all}
  .pp.starpp .star tbody .gh{word-break:keep-all}
  .pp.starpp .star .corner{width:13%!important}
@@ -313,6 +319,8 @@ function buildSchedule(){
 }
 
 const LGTAG={w:'女子',m1:'混①',m2:'混②'};
+/* 星取表の対戦マス: 上=1セット目、下=2セット目。「ー」の左右に得点を書く */
+const SC2='<td class="gc sc2"><span>ー</span><span>ー</span></td>';
 /* 審判チーム名。試合と別リーグのチームなら（混①）などを付ける */
 function refName(c,r,full){
   if(!r)return '—';
@@ -352,7 +360,7 @@ function renderStars(){
     let body='';
     for(let r=1;r<=n;r++){
       let tds='';
-      for(let c=1;c<=n;c++)tds+= r===c?'<td class="diag"></td>':'<td class="gc"></td>';
+      for(let c=1;c<=n;c++)tds+= r===c?'<td class="diag"></td>':SC2;
       body+=`<tr><th class="gh">${brk(nm(L.key,r))}</th>${tds}<td class="gc tot"></td><td class="gc rank"></td></tr>`;
     }
     html+=`<div class="card star-card"><h2 style="border-color:${L.color}">${L.name} 星取表（${n}チーム 総当たり）</h2><table class="star"><thead><tr><th class="gh corner"></th>${head}<th class="gh" style="width:7%">勝点</th><th class="gh" style="width:7%">順位</th></tr></thead><tbody>${body}</tbody></table></div>`;
@@ -420,7 +428,7 @@ function renderPrint(){
     let head=''; for(let t=1;t<=n;t++)head+=`<th class="gh">${brk(nm(L.key,t))}</th>`;
     let body='';
     for(let r=1;r<=n;r++){
-      let tds=''; for(let c=1;c<=n;c++)tds+= r===c?'<td class="diag"></td>':'<td class="gc"></td>';
+      let tds=''; for(let c=1;c<=n;c++)tds+= r===c?'<td class="diag"></td>':SC2;
       body+=`<tr><th class="gh">${brk(nm(L.key,r))}</th>${tds}<td class="gc tot"></td><td class="gc rank"></td></tr>`;
     }
     html+=`<div class="pp starpp"><div class="cp-head" style="border-color:${L.color}">
