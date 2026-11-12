@@ -42,9 +42,10 @@ thead th{background:var(--head);color:#fff;font-weight:600;font-size:13px}
 .star td.gc{height:38px}
 .star .sno{font-weight:500;opacity:.75}
 .star thead .sno{display:block;font-size:.8em;line-height:1.2}
-.star tbody .gh{text-align:left;padding-left:6px}
-.star tbody .sno{display:inline-block;width:1.4em;text-align:left;vertical-align:middle;font-size:.72em}
-.star tbody .snm{display:inline-block;vertical-align:middle;max-width:calc(100% - 1.2em)}
+.star tbody .gh{text-align:center}
+.star .rh{position:relative;padding:0 14px}
+.star tbody .sno{position:absolute;left:2px;top:50%;transform:translateY(-50%);font-size:.72em}
+.star tbody .snm{display:inline-block;vertical-align:middle;text-align:center}
 .star td.sc2{padding:0}
 .star td.sc2 span{display:block;line-height:19px;font-size:12px;color:var(--rest)}
 .star td.sc2 span+span{border-top:1px dotted var(--line)}
@@ -221,7 +222,7 @@ const fullnm=(lg,t)=>names[k(lg,t)]||('チーム'+t);
 /* 星取表の見出し用: 「miracle③（ミナミ）」のようなカッコ書きはカッコの前で改行 */
 const brk=s=>esc(s).replace(/（/g,'<br>（');
 /* 星取表のチーム表示: 1ページ目のチーム一覧と同じ番号＋チーム名（名前が未入力なら番号だけ） */
-const starNm=(lg,t)=>`<span class="sno">${t}</span>`+(names[k(lg,t)]?`<span class="snm">${brk(names[k(lg,t)])}</span>`:'');
+const starNm=(lg,t)=>names[k(lg,t)]?`<div class="rh"><span class="sno">${t}</span><span class="snm">${brk(names[k(lg,t)])}</span></div>`:(''+t);
 const size=lg=>({w:cfg.w,m1:cfg.m1,m2:cfg.m2})[lg];
 
 /* ---- 総当たり生成 (サークル法) ---- */
