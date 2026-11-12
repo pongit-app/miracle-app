@@ -152,6 +152,7 @@ table.ch-score{width:100%;border-collapse:collapse;table-layout:fixed}
     <div class="grp"><label>1試合（分）</label><input id="cdur" type="number" min="5" max="60"></div>
     <div class="grp"><label>セット得点</label><input id="cpt" type="number" min="5" max="30"></div>
     <div class="grp"><label>デュース上限<br><small>（得点と同じ＝なし）</small></label><input id="ccap" type="number" min="5" max="40"></div>
+    <div class="grp"><label>途中の女子一斉<br><small>（回数・0＝なし）</small></label><input id="csimmid" type="number" min="0" max="10"></div>
   </div>
   <p class="note" id="cfgsummary" style="text-align:center"></p>
 </div>
@@ -182,7 +183,7 @@ table.ch-score{width:100%;border-collapse:collapse;table-layout:fixed}
   <h2>進行表（画面用・全コートまとめ）</h2>
   <div id="schedwrap" style="overflow-x:auto"></div>
   <p class="note">※審判は1試合2チーム（審判①・審判②）。そのリーグで休みのチームから、試合中・同じ時間の別の審判と重ならないよう自動で振り分けます。回数はなるべく均等にし、2枠続けての審判は避けます。<br>
-  ※<b style="color:var(--accent)">女子一斉</b>の枠はA・B・C全部で女子。<b>審判は混合チームが担当</b>。一斉枠は3コートの終了時刻がそろうよう自動配置します。<br>
+  ※<b style="color:var(--accent)">女子一斉</b>の枠はA・B・C全部で女子。<b>審判は混合チームが担当</b>。一斉枠は大会の最初にまとめ、設定の回数だけ途中にも入れます。<br>
   ※どこかのリーグが先に終わったら、空いたコートで残り試合を消化します。</p>
 </div>
 
@@ -201,7 +202,7 @@ const LEAGUES=[
  {key:'m1',name:'混合①', court:'コートB', color:'#2f6fe0', cell:'cm1'},
  {key:'m2',name:'混合②', court:'コートC', color:'#1f9d57', cell:'cm2'},
 ];
-let cfg={w:8,m1:7,m2:7,start:'09:00',dur:25,pt:15,cap:15};
+let cfg={w:8,m1:7,m2:7,start:'09:00',dur:25,pt:15,cap:15,simMid:1};
 try{Object.assign(cfg,JSON.parse(localStorage.getItem(CK))||{})}catch(e){}
 /* チラシ通り「デュースなし」に一度だけ切り替える（以前の初期値17点がこの端末に保存されている場合の対策） */
 if(!localStorage.getItem('miracle_nodeuce_v1')){cfg.cap=cfg.pt;localStorage.setItem(CK,JSON.stringify(cfg));localStorage.setItem('miracle_nodeuce_v1','1');}
@@ -245,6 +246,12 @@ function buildSchedule(){
   /* 女子は試合が長いので、一斉枠は大会の最初にまとめて消化する */
   const simAt=new Set();
   for(let i=0;i<s;i++)simAt.add(i);
+  /* さらに大会の途中にも女子一斉を入れる（女子の試合が延びた分をここで取り戻す）。回数は設定 simMid */
+  const mid=simSize>0?Math.max(0,Math.min(+cfg.simMid||0,Math.floor(W/simSize)-s)):0;
+  if(mid>0){
+    const T=(s+mid)+Math.max(W-simSize*(s+mid),maxG);
+    for(let i=0;i<mid;i++){let p=s+Math.round((i+1)*(T-s)/(mid+1)); while(simAt.has(p))p++; simAt.add(p);}
+  }
   const last={}; for(let t=1;t<=N;t++)last[t]=-9;
   const sortLeft=t=>womenLeft.sort((x,y)=>Math.max(last[x[0]],last[x[1]])-Math.max(last[y[0]],last[y[1]]));
   function pickSim(kk,t){
@@ -349,7 +356,7 @@ function renderSched(){
   const W=cfg.w*(cfg.w-1)/2, G1=cfg.m1*(cfg.m1-1)/2, G2=cfg.m2*(cfg.m2-1)/2;
   document.getElementById('ruleline').textContent='2セット制・'+ruleTxt();
   document.getElementById('cfgsummary').innerHTML=
-   `試合数：女子 <b>${W}</b>・混合① <b>${G1}</b>・混合② <b>${G2}</b>（計 ${W+G1+G2}試合）／ 全<b>${slots.length}枠</b> ・ 終了目安 <b>${timeOf(slots.length)}</b>`;
+   `試合数：女子 <b>${W}</b>・混合① <b>${G1}</b>・混合② <b>${G2}</b>（計 ${W+G1+G2}試合）／ 全<b>${slots.length}枠</b> ・ 終了目安 <b>${timeOf(slots.length)}</b><br>女子一斉：`+(slots.map((sl,i)=>sl.sim?`第${i+1}枠（${timeOf(i)}）`:'').filter(Boolean).join('・')||'なし');
 }
 function renderStars(){
   let html='';
@@ -474,7 +481,7 @@ function printCards(){
 }
 /* ---- 設定 ---- */
 function bindCfg(){
-  const ids={cw:'w',cm1:'m1',cm2:'m2',cstart:'start',cdur:'dur',cpt:'pt',ccap:'cap'};
+  const ids={cw:'w',cm1:'m1',cm2:'m2',cstart:'start',cdur:'dur',cpt:'pt',ccap:'cap',csimmid:'simMid'};
   for(const id in ids){
     const el=document.getElementById(id);
     el.value=cfg[ids[id]];
@@ -486,6 +493,7 @@ function bindCfg(){
       if(id==='cdur'&&(v<5||v>60))return;
       if(id==='cpt'&&(v<5||v>30))return;
       if(id==='ccap'&&(v<5||v>40))return;
+      if(id==='csimmid'&&(v<0||v>10))return;
       cfg[ids[id]]=v;
       localStorage.setItem(CK,JSON.stringify(cfg));
       rebuild();
