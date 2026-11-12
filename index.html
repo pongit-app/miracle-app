@@ -182,7 +182,7 @@ table.ch-score{width:100%;border-collapse:collapse;table-layout:fixed}
   <h2>進行表（画面用・全コートまとめ）</h2>
   <div id="schedwrap" style="overflow-x:auto"></div>
   <p class="note">※審判は1試合2チーム（審判①・審判②）。そのリーグで休みのチームから、試合中・同じ時間の別の審判と重ならないよう自動で振り分けます。回数はなるべく均等にし、2枠続けての審判は避けます。<br>
-  ※<b style="color:var(--accent)">女子一斉</b>の枠はA・B・C全部で女子。<b>審判は混合チームが担当</b>（チーム名に（混①）（混②）の印）。一斉枠は3コートの終了時刻がそろうよう自動配置します。<br>
+  ※<b style="color:var(--accent)">女子一斉</b>の枠はA・B・C全部で女子。<b>審判は混合チームが担当</b>。一斉枠は3コートの終了時刻がそろうよう自動配置します。<br>
   ※どこかのリーグが先に終わったら、空いたコートで残り試合を消化します。</p>
 </div>
 
@@ -318,14 +318,13 @@ function buildSchedule(){
   });
 }
 
-const LGTAG={w:'女子',m1:'混①',m2:'混②'};
 /* 星取表の対戦マス: 上=1セット目、下=2セット目。「ー」の左右に得点を書く */
 const SC2='<td class="gc sc2"><span>ー</span><span>ー</span></td>';
-/* 審判チーム名。試合と別リーグのチームなら（混①）などを付ける */
+/* 審判チーム名（チーム名だけ。リーグの印は付けない） */
 function refName(c,r,full){
   if(!r)return '—';
   const n=full?fullnm(r.lg,r.t):nm(r.lg,r.t);
-  return r.lg!==c.lg?`${n}（${LGTAG[r.lg]}）`:n;
+  return n;
 }
 /* ---- 表示ユーティリティ ---- */
 function timeOf(i){
@@ -420,7 +419,7 @@ function renderPrint(){
       <span class="cp-court" style="color:${L.color}">${L.court}<small style="font-size:15px;margin-left:8px;color:var(--ink)">基本：${L.name}</small></span>
       <span class="cp-tour">miracle杯 進行表（1試合${cfg.dur}分・${ruleTxt()}）</span></div>
       <table><thead><tr><th style="width:70px">枠</th><th style="width:60px">時刻</th><th>対戦</th><th style="width:125px">審判①</th><th style="width:125px">審判②</th></tr></thead><tbody>${rows}</tbody></table>
-      <p class="note">※審判は1試合2チーム（審判①・審判②）。（混①）などは別リーグのチームが審判をする印。<br>※灰色の帯＝女子一斉枠（このコートも女子の試合・審判は混合チーム）。[混合①][混合②]表記はこのコートで消化する他リーグの試合。</p></div>`;
+      <p class="note">※審判は1試合2チーム（審判①・審判②）。<br>※灰色の帯＝女子一斉枠（このコートも女子の試合・審判は混合チーム）。[混合①][混合②]表記はこのコートで消化する他リーグの試合。</p></div>`;
   });
   /* 星取表ページ */
   LEAGUES.forEach(L=>{
