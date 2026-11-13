@@ -452,7 +452,7 @@ function renderPrint(){
     }
     html+=`<div class="pp starpp"><div class="cp-head" style="border-color:${L.color}">
       <span class="cp-court" style="color:${L.color}">${L.name}　${L.court}</span>
-      <span class="cp-tour">miracle杯（${n}チーム 総当たり）</span></div>
+      <span class="cp-tour">${n}チーム 総当たり</span></div>
       <table class="star"><thead><tr><th class="gh corner"></th>${head}<th class="gh" style="width:7%">勝点</th><th class="gh" style="width:7%">順位</th></tr></thead><tbody>${body}</tbody></table></div>`;
   });
   document.getElementById('printpages').innerHTML=html;
