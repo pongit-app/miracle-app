@@ -437,7 +437,7 @@ function renderPrint(){
     });
     html+=`<div class="pp"><div class="cp-head" style="border-color:${L.color}">
       <span class="cp-court" style="color:${L.color}">${L.name}　${L.court}</span>
-      <span class="cp-tour">miracle杯 進行表（1試合${cfg.dur}分・${ruleTxt()}）</span></div>
+      <span class="cp-tour">1試合${cfg.dur}分・${ruleTxt()}</span></div>
       <table><thead><tr><th style="width:70px">枠</th><th style="width:60px">時刻</th><th>対戦</th><th style="width:125px">審判①</th><th style="width:125px">審判②</th></tr></thead><tbody>${rows}</tbody></table>
       <p class="note">※審判は1試合2チーム（審判①メイン、審判②サブ）。<br>※灰色の帯＝女子一斉枠。[混合①][混合②]表記はこのコートで消化する他リーグの試合。</p></div>`;
   });
