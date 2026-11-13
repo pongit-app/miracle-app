@@ -382,7 +382,7 @@ function renderStars(){
       for(let c=1;c<=n;c++)tds+= r===c?'<td class="diag"></td>':SC2;
       body+=`<tr><th class="gh">${starNm(L.key,r)}</th>${tds}<td class="gc tot"></td><td class="gc rank"></td></tr>`;
     }
-    html+=`<div class="card star-card"><h2 style="border-color:${L.color}">${L.court}　${L.name}（${n}チーム 総当たり）</h2><table class="star"><thead><tr><th class="gh corner"></th>${head}<th class="gh" style="width:7%">勝点</th><th class="gh" style="width:7%">順位</th></tr></thead><tbody>${body}</tbody></table></div>`;
+    html+=`<div class="card star-card"><h2 style="border-color:${L.color}">${L.name}　${L.court}（${n}チーム 総当たり）</h2><table class="star"><thead><tr><th class="gh corner"></th>${head}<th class="gh" style="width:7%">勝点</th><th class="gh" style="width:7%">順位</th></tr></thead><tbody>${body}</tbody></table></div>`;
   });
   document.getElementById('starwrap').innerHTML=html;
 }
@@ -416,7 +416,7 @@ function renderPrint(){
       const n=size(L.key); if(n<2)return '';
       let list='';
       for(let t=1;t<=n;t++)list+=`<div class="pn-row"><span class="pn-no" style="color:${L.color}">${t}</span><span class="pn-name">${esc(fullnm(L.key,t))}</span></div>`;
-      return `<div><div class="pn-head" style="border-color:${L.color};color:${L.color}">${L.name}</div>${list}</div>`;
+      return `<div><div class="pn-head" style="border-color:${L.color};color:${L.color}">${L.name}　${L.court}</div>${list}</div>`;
     }).join('')+'</div></div>';
   /* コート毎ページ */
   [0,1,2].forEach(ci=>{
@@ -451,7 +451,7 @@ function renderPrint(){
       body+=`<tr><th class="gh">${starNm(L.key,r)}</th>${tds}<td class="gc tot"></td><td class="gc rank"></td></tr>`;
     }
     html+=`<div class="pp starpp"><div class="cp-head" style="border-color:${L.color}">
-      <span class="cp-court" style="color:${L.color}">${L.court}<small style="font-size:17px;margin-left:10px;color:var(--ink)">${L.name}</small></span>
+      <span class="cp-court" style="color:${L.color}">${L.name}　${L.court}</span>
       <span class="cp-tour">miracle杯（${n}チーム 総当たり）</span></div>
       <table class="star"><thead><tr><th class="gh corner"></th>${head}<th class="gh" style="width:7%">勝点</th><th class="gh" style="width:7%">順位</th></tr></thead><tbody>${body}</tbody></table></div>`;
   });
