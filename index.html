@@ -119,14 +119,13 @@ thead th{background:var(--head);color:#fff;font-weight:600;font-size:13px}
  .star .tot,.star .rank{background:#fff!important}
  .ch-score tbody th,.ch-score tr.sc th{background:#f0f0f0!important}
  .ch-score th,.ch-score td{border-color:#000!important}
- .cutline{border-color:#000}.cutline::before{color:#000}
 }
 /* ===== 対戦カード (A4に2試合 → 切ってA5。控えなし) ===== */
 #printcards{display:none}
 .cardpage{height:296mm;padding:8mm 11mm;display:flex;flex-direction:column;page-break-after:always}
 .chalf{height:136mm;padding:6mm 8mm 0;display:flex;flex-direction:column}
-.cutline{flex:0 0 auto;border-top:2px dashed #aab;position:relative;margin:2mm 0}
-.cutline::before{content:"✂";position:absolute;left:4mm;top:-3.4mm;color:#99a;font-size:14px;background:#fff;padding:0 3px}
+.cutline{flex:0 0 auto;border-top:2px dashed #888;position:relative;margin:2mm 0}
+.cutline::before{content:"✂";position:absolute;left:4mm;top:-3.4mm;color:#666;font-size:14px;background:#fff;padding:0 3px}
 .ch-top{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid var(--head);padding-bottom:2mm}
 .ch-brand{font-size:15px;font-weight:800;color:var(--head)}
 .ch-brand b{color:var(--accent)}
