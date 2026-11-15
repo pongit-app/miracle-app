@@ -403,6 +403,78 @@ function buildSchedule(){
     });
     prevRefs=used;
   });
+  balanceRefs();
+}
+/* ---- 審判回数の平等化 ----
+   (1) 合計回数: 女子どうし・混合どうしで、いちばん多いチームと少ないチームの差が1回以内になるよう審判を付け替える。
+       付け替え先は、その枠で試合も審判もしていないチームだけ（同じ名前のチームが試合中・審判中の枠も不可）。
+       通常の試合は同じリーグのチーム、女子一斉の枠は混合チームから選ぶ、という決まりは変えない。
+   (2) メイン/サブ: 各チームのメインとサブがほぼ半分ずつになるよう、1試合の中のメインとサブを入れ替える。 */
+function balanceRefs(){
+  const K=r=>r.lg+':'+r.t, grp=key=>key.charAt(0)==='w'?'w':'mix';
+  const club=key=>{const v=names[key];return v?String(v).trim().toLowerCase():null;};
+  const teams=[]; LEAGUES.forEach(L=>{for(let x=1;x<=size(L.key);x++)teams.push(L.key+':'+x);});
+  const tot={}; teams.forEach(t=>tot[t]=0);
+  slots.forEach(sl=>sl.cells.forEach(c=>{if(c)c.refs.forEach(r=>{if(r)tot[K(r)]++;});}));
+  /* その枠で key を審判にできるか（skip=外す予定の審判） */
+  const free=(sl,key,skip)=>{
+    const cn=club(key);
+    for(const c of sl.cells){ if(!c)continue;
+      for(const t of c.m){const k2=c.lg+':'+t; if(k2===key)return false; if(cn&&club(k2)===cn)return false;}
+      for(const r of c.refs){ if(!r)continue; const k2=K(r); if(k2===skip)continue; if(k2===key)return false; if(cn&&club(k2)===cn)return false;}
+    }
+    return true;
+  };
+  /* (1) 合計回数をそろえる */
+  /* from の審判を1回ぶん to に付け替える。できたら元に戻すための記録を返す */
+  const tryMove=(from,to)=>{
+    for(const sl of slots){
+      for(const c of sl.cells){ if(!c)continue;
+        const idx=c.refs.findIndex(r=>r&&K(r)===from); if(idx<0)continue;
+        const okLg=sl.sim?(to.charAt(0)!=='w'):(to.split(':')[0]===c.lg);
+        if(!okLg||!free(sl,to,from))continue;
+        const p=to.split(':'), old=c.refs[idx]; c.refs[idx]={lg:p[0],t:+p[1]}; tot[from]--; tot[to]++;
+        return ()=>{c.refs[idx]=old; tot[from]++; tot[to]--;};
+      }
+    }
+    return null;
+  };
+  for(let guard=0;guard<400;guard++){
+    let done=false;
+    const desc=teams.slice().sort((x,y)=>tot[y]-tot[x]), asc=desc.slice().reverse();
+    outer:
+    for(const hi of desc){
+      for(const lo of asc){
+        if(grp(lo)!==grp(hi)||tot[hi]-tot[lo]<2)continue;
+        if(tryMove(hi,lo)){done=true;break outer;}
+        /* 直接は無理でも、間に1チーム挟めば付け替えられることがある（mid→lo のあと hi→mid） */
+        for(const mid of teams){
+          if(mid===hi||mid===lo||grp(mid)!==grp(hi)||tot[mid]<=tot[lo])continue;
+          const undo=tryMove(mid,lo); if(!undo)continue;
+          if(tryMove(hi,mid)){done=true;break outer;}
+          undo();
+        }
+      }
+    }
+    if(!done)break;
+  }
+  /* (2) メインとサブをそろえる: 「メインが多すぎるチーム」から「少なすぎるチーム」へ、入れ替えの連鎖でメインを1回分ずつ移す */
+  const main={}; teams.forEach(t=>main[t]=0);
+  const games=[]; slots.forEach(sl=>sl.cells.forEach(c=>{if(c&&c.refs[0]&&c.refs[1]){games.push(c);main[K(c.refs[0])]++;}else if(c&&c.refs[0])main[K(c.refs[0])]++;}));
+  const dev=(t,d)=>{const h=tot[t]/2,a=main[t]+d-h,b=main[t]-h;return a*a-b*b;};
+  for(let guard=0;guard<400;guard++){
+    let best=null,bestD=-1e-9;
+    for(const u of teams){
+      const par={}; par[u]=null; const queue=[u];
+      while(queue.length){const x=queue.shift();
+        for(const g of games){ if(K(g.refs[0])!==x)continue; const y=K(g.refs[1]); if(y in par)continue; par[y]={from:x,g}; queue.push(y);}
+      }
+      for(const w in par){ if(w===u)continue; const d=dev(u,-1)+dev(w,1); if(d<bestD){bestD=d;best={u,w,par};} }
+    }
+    if(!best)break;
+    let x=best.w; while(best.par[x]){const g=best.par[x].g; const t=g.refs[0];g.refs[0]=g.refs[1];g.refs[1]=t; x=best.par[x].from;}
+    main[best.u]--; main[best.w]++;
+  }
 }
 
 /* 星取表の対戦マス: 上=1セット目、下=2セット目。「ー」の左右に得点を書く */
