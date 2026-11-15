@@ -406,16 +406,20 @@ function buildSchedule(){
   balanceRefs();
 }
 /* ---- 審判回数の平等化 ----
-   (1) 合計回数: 女子どうし・混合どうしで、いちばん多いチームと少ないチームの差が1回以内になるよう審判を付け替える。
+   決まり:
+   ・女子の試合の審判は女子チーム。混合チームが女子の試合を審判するのは「女子一斉」の枠だけ。
+   ・混合の試合の審判は同じリーグの混合チーム。女子チームは「サブ」としてなら混合の試合に入れる（メインは混合）。
+   (1) 合計回数: 全チームで、いちばん多いチームと少ないチームの差が1回以内になるよう審判を付け替える。
        付け替え先は、その枠で試合も審判もしていないチームだけ（同じ名前のチームが試合中・審判中の枠も不可）。
-       通常の試合は同じリーグのチーム、女子一斉の枠は混合チームから選ぶ、という決まりは変えない。
-   (2) メイン/サブ: 各チームのメインとサブがほぼ半分ずつになるよう、1試合の中のメインとサブを入れ替える。 */
+   (2) メイン/サブ: 各チームのメインとサブがなるべく半分ずつになるよう、1試合の中のメインとサブを入れ替える。 */
 function balanceRefs(){
-  const K=r=>r.lg+':'+r.t, grp=key=>key.charAt(0)==='w'?'w':'mix';
+  const K=r=>r.lg+':'+r.t, isW=key=>key.charAt(0)==='w';
   const club=key=>{const v=names[key];return v?String(v).trim().toLowerCase():null;};
   const teams=[]; LEAGUES.forEach(L=>{for(let x=1;x<=size(L.key);x++)teams.push(L.key+':'+x);});
   const tot={}; teams.forEach(t=>tot[t]=0);
-  slots.forEach(sl=>sl.cells.forEach(c=>{if(c)c.refs.forEach(r=>{if(r)tot[K(r)]++;});}));
+  /* 混合の試合に女子が入っているときは、女子をサブ側にする（相方が混合のとき） */
+  const womenToSub=c=>{ if(c.lg!=='w'&&c.refs[0]&&c.refs[1]&&c.refs[0].lg==='w'&&c.refs[1].lg!=='w'){const t=c.refs[0];c.refs[0]=c.refs[1];c.refs[1]=t;} };
+  slots.forEach(sl=>sl.cells.forEach(c=>{if(c){womenToSub(c);c.refs.forEach(r=>{if(r)tot[K(r)]++;});}}));
   /* その枠で key を審判にできるか（skip=外す予定の審判） */
   const free=(sl,key,skip)=>{
     const cn=club(key);
@@ -425,31 +429,43 @@ function balanceRefs(){
     }
     return true;
   };
-  /* (1) 合計回数をそろえる */
-  /* from の審判を1回ぶん to に付け替える。できたら元に戻すための記録を返す */
-  const tryMove=(from,to)=>{
-    for(const sl of slots){
-      for(const c of sl.cells){ if(!c)continue;
-        const idx=c.refs.findIndex(r=>r&&K(r)===from); if(idx<0)continue;
-        const okLg=sl.sim?(to.charAt(0)!=='w'):(to.split(':')[0]===c.lg);
-        if(!okLg||!free(sl,to,from))continue;
-        const p=to.split(':'), old=c.refs[idx]; c.refs[idx]={lg:p[0],t:+p[1]}; tot[from]--; tot[to]++;
-        return ()=>{c.refs[idx]=old; tot[from]++; tot[to]--;};
-      }
-    }
-    return null;
+  const refsIn=si=>{const o=new Set(); if(slots[si])slots[si].cells.forEach(c=>{if(c)c.refs.forEach(r=>{if(r)o.add(K(r));});}); return o;};
+  /* この試合の idx 番目の審判を to にしてよいか */
+  const allowed=(sl,c,idx,to)=>{
+    if(sl.sim)return !isW(to);                    /* 女子一斉: 混合チームだけ */
+    if(c.lg==='w')return isW(to);                 /* 女子の通常の試合: 女子チームだけ */
+    if(to.split(':')[0]===c.lg)return true;       /* 混合の試合: 同じリーグ */
+    if(!isW(to))return false;                     /* もう一方の混合リーグは入れない */
+    const other=c.refs[1-idx];                    /* 女子はサブだけ: 相方が混合チームであること */
+    return !!other&&other.lg!=='w';
   };
-  for(let guard=0;guard<400;guard++){
+  /* (1) 合計回数をそろえる */
+  const tryMove=(from,to)=>{
+    let pick=null,pickScore=1e9;
+    slots.forEach((sl,si)=>{
+      sl.cells.forEach(c=>{ if(!c)return;
+        const idx=c.refs.findIndex(r=>r&&K(r)===from); if(idx<0)return;
+        if(!allowed(sl,c,idx,to)||!free(sl,to,from))return;
+        const score=(refsIn(si-1).has(to)?2:0)+(refsIn(si+1).has(to)?2:0);   /* 2枠続けての審判はなるべく避ける */
+        if(score<pickScore){pickScore=score;pick={c,idx};}
+      });
+    });
+    if(!pick)return null;
+    const c=pick.c, before=c.refs.slice(), p=to.split(':');
+    c.refs[pick.idx]={lg:p[0],t:+p[1]}; womenToSub(c); tot[from]--; tot[to]++;
+    return ()=>{c.refs[0]=before[0];c.refs[1]=before[1]; tot[from]++; tot[to]--;};
+  };
+  for(let guard=0;guard<600;guard++){
     let done=false;
     const desc=teams.slice().sort((x,y)=>tot[y]-tot[x]), asc=desc.slice().reverse();
     outer:
     for(const hi of desc){
       for(const lo of asc){
-        if(grp(lo)!==grp(hi)||tot[hi]-tot[lo]<2)continue;
+        if(tot[hi]-tot[lo]<2)continue;
         if(tryMove(hi,lo)){done=true;break outer;}
         /* 直接は無理でも、間に1チーム挟めば付け替えられることがある（mid→lo のあと hi→mid） */
         for(const mid of teams){
-          if(mid===hi||mid===lo||grp(mid)!==grp(hi)||tot[mid]<=tot[lo])continue;
+          if(mid===hi||mid===lo||tot[mid]<=tot[lo])continue;
           const undo=tryMove(mid,lo); if(!undo)continue;
           if(tryMove(hi,mid)){done=true;break outer;}
           undo();
@@ -458,11 +474,14 @@ function balanceRefs(){
     }
     if(!done)break;
   }
-  /* (2) メインとサブをそろえる: 「メインが多すぎるチーム」から「少なすぎるチーム」へ、入れ替えの連鎖でメインを1回分ずつ移す */
+  /* (2) メインとサブをそろえる: 「メインが多すぎるチーム」から「少なすぎるチーム」へ、入れ替えの連鎖でメインを1回分ずつ移す。
+         混合の試合に女子が入っている試合は入れ替えない（女子はサブのまま）。 */
   const main={}; teams.forEach(t=>main[t]=0);
-  const games=[]; slots.forEach(sl=>sl.cells.forEach(c=>{if(c&&c.refs[0]&&c.refs[1]){games.push(c);main[K(c.refs[0])]++;}else if(c&&c.refs[0])main[K(c.refs[0])]++;}));
-  const dev=(t,d)=>{const h=tot[t]/2,a=main[t]+d-h,b=main[t]-h;return a*a-b*b;};
-  for(let guard=0;guard<400;guard++){
+  const games=[];
+  slots.forEach(sl=>sl.cells.forEach(c=>{ if(!c||!c.refs[0])return; main[K(c.refs[0])]++;
+    if(c.refs[1]&&!(c.lg!=='w'&&(c.refs[0].lg==='w'||c.refs[1].lg==='w')))games.push(c); }));
+  const dev=(t,d)=>{const h=tot[t]/2,x=main[t]+d-h,y=main[t]-h;return x*x-y*y;};
+  for(let guard=0;guard<600;guard++){
     let best=null,bestD=-1e-9;
     for(const u of teams){
       const par={}; par[u]=null; const queue=[u];
