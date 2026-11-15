@@ -192,7 +192,7 @@ table.ch-score{width:100%;border-collapse:collapse;table-layout:fixed}
 <div class="card" id="schedcard">
   <h2>進行表（画面用・全コートまとめ）</h2>
   <div id="schedwrap" style="overflow-x:auto"></div>
-  <p class="note">※審判は1試合2チーム（審判①・審判②）。そのリーグで休みのチームから、試合中・同じ時間の別の審判と重ならないよう自動で振り分けます。回数はなるべく均等にし、2枠続けての審判は避けます。<br>
+  <p class="note">※審判は1試合2チーム（審判メイン・審判サブ）。そのリーグで休みのチームから、試合中・同じ時間の別の審判と重ならないよう自動で振り分けます。回数はなるべく均等にし、2枠続けての審判は避けます。<br>
   ※<b style="color:var(--accent)">女子一斉</b>の枠はA・B・C全部で女子。<b>審判は混合チームが担当</b>。一斉枠は大会の最初にまとめ、設定の回数だけ途中にも入れます。<br>
   ※どこかのリーグが先に終わったら、空いたコートで残り試合を消化します。</p>
 </div>
@@ -300,7 +300,7 @@ function buildSchedule(){
     }
     t++;
   }
-  /* ---- 審判割当（1試合に審判2チーム：審判①・審判②） ----
+  /* ---- 審判割当（1試合に審判2チーム：refs[0]=審判メイン、refs[1]=審判サブ） ----
      同じ枠で「試合中のチーム」「同じ枠で別コートの審判」「同じ試合のもう1人」とは重ならない。
      通常枠＝その試合のリーグの休みチーム（足りなければ他リーグの休みチーム）。
      女子一斉枠＝混合チーム（足りなければ休みの女子チーム）。
@@ -354,7 +354,7 @@ function timeOf(i){
 function cellHTML(c){
   if(!c)return '<td class="mt empty">—</td>';
   const L=LEAGUES.find(l=>l.key===c.lg);
-  const ref=`<span class="ref">審判① <b>${esc(refName(c,c.refs[0]))}</b>　審判② <b>${esc(refName(c,c.refs[1]))}</b></span>`;
+  const ref=`<span class="ref">審判メイン <b>${esc(refName(c,c.refs[0]))}</b>　審判サブ <b>${esc(refName(c,c.refs[1]))}</b></span>`;
   return `<td class="mt ${L.cell}">${esc(nm(c.lg,c.m[0]))}<span class="vs">対</span>${esc(nm(c.lg,c.m[1]))}<br>${ref}</td>`;
 }
 function renderSched(){
@@ -437,8 +437,8 @@ function renderPrint(){
     html+=`<div class="pp"><div class="cp-head" style="border-color:${L.color}">
       <span class="cp-court" style="color:${L.color}">${L.name}　${L.court}</span>
       <span class="cp-tour">1試合${cfg.dur}分・${ruleTxt()}</span></div>
-      <table><thead><tr><th style="width:70px">枠</th><th style="width:60px">時刻</th><th>対戦</th><th style="width:125px">審判①</th><th style="width:125px">審判②</th></tr></thead><tbody>${rows}</tbody></table>
-      <p class="note">※審判は1試合2チーム（審判①メイン、審判②サブ）。<br>※灰色の帯＝女子一斉枠。[混合①][混合②]表記はこのコートで消化する他リーグの試合。</p></div>`;
+      <table><thead><tr><th style="width:70px">枠</th><th style="width:60px">時刻</th><th>対戦</th><th style="width:125px">審判メイン</th><th style="width:125px">審判サブ</th></tr></thead><tbody>${rows}</tbody></table>
+      <p class="note">※灰色の帯＝女子一斉枠。[混合①][混合②]表記はこのコートで消化する他リーグの試合。</p></div>`;
   });
   /* 星取表ページ */
   LEAGUES.forEach(L=>{
@@ -467,7 +467,7 @@ function renderCards(){
       const L=LEAGUES.find(l=>l.key===c.lg);
       counter[c.lg]++;
       const court=['コートA','コートB','コートC'][ci];
-      const refTxt=`審判①：<b>${esc(refName(c,c.refs[0],true))}</b>　審判②：<b>${esc(refName(c,c.refs[1],true))}</b>`;
+      const refTxt=`審判メイン：<b>${esc(refName(c,c.refs[0],true))}</b>　審判サブ：<b>${esc(refName(c,c.refs[1],true))}</b>`;
       const half=`<div class="chalf">
         <div class="ch-top"><span class="ch-brand"><b>miracle</b>杯 対戦カード</span>
           <span class="ch-meta" style="color:${L.color}">${L.name} 第${counter[c.lg]}試合</span>
