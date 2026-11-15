@@ -360,7 +360,7 @@ function refName(c,r,full){
   const n=full?fullnm(r.lg,r.t):nm(r.lg,r.t);
   return n;
 }
-/* 同じ名前のチームが別のリーグにもいるときだけ付ける印（例: MIX HIGH JUMP【女子】／【混合】）。HTMLを返す */
+/* 同じ名前のチームが別のリーグにもいるときだけ付ける印（例: MIX HIGH JUMP【女子】／【混合】）。審判の表示にだけ使う。HTMLを返す */
 function dupTag(lg,t){
   const v=names[k(lg,t)]; if(!v)return '';
   const key=String(v).trim().toLowerCase(), hit=new Set();
@@ -380,7 +380,7 @@ function cellHTML(c){
   if(!c)return '<td class="mt empty">—</td>';
   const L=LEAGUES.find(l=>l.key===c.lg);
   const ref=`<span class="ref">審判メイン <b>${esc(refName(c,c.refs[0]))}${refTag(c.refs[0])}</b>　審判サブ <b>${esc(refName(c,c.refs[1]))}${refTag(c.refs[1])}</b></span>`;
-  return `<td class="mt ${L.cell}">${esc(nm(c.lg,c.m[0]))}${dupTag(c.lg,c.m[0])}<span class="vs">対</span>${esc(nm(c.lg,c.m[1]))}${dupTag(c.lg,c.m[1])}<br>${ref}</td>`;
+  return `<td class="mt ${L.cell}">${esc(nm(c.lg,c.m[0]))}<span class="vs">対</span>${esc(nm(c.lg,c.m[1]))}<br>${ref}</td>`;
 }
 function renderSched(){
   let rows='';
@@ -460,7 +460,7 @@ function renderPrint(){
       else{
         const CL=LEAGUES.find(x=>x.key===c.lg);
         const other=c.lg!==L.key?` <small style="color:${CL.color};font-weight:700">[${CL.name}]</small>`:'';
-        cell=`<td class="mt ${CL.cell}">${esc(nm(c.lg,c.m[0]))}${dupTag(c.lg,c.m[0])}<span class="vs">対</span>${esc(nm(c.lg,c.m[1]))}${dupTag(c.lg,c.m[1])}${other}</td>`;
+        cell=`<td class="mt ${CL.cell}">${esc(nm(c.lg,c.m[0]))}<span class="vs">対</span>${esc(nm(c.lg,c.m[1]))}${other}</td>`;
         refc=`<td class="ref refs"><b>${esc(refName(c,c.refs[0]))}${refTag(c.refs[0])}</b></td><td class="ref refs"><b>${esc(refName(c,c.refs[1]))}${refTag(c.refs[1])}</b></td>`;
       }
       const tag=sl.sim?'<span class="badge">女子一斉</span>':'';
@@ -505,9 +505,9 @@ function renderCards(){
         <div class="ch-top"><span class="ch-brand"><b>miracle</b>杯 対戦カード</span>
           <span class="ch-meta" style="color:${L.color}">${L.name} 第${counter[c.lg]}試合</span>
           <span class="ch-meta2">${court}・第${i+1}枠・${timeOf(i)}〜</span></div>
-        <div class="ch-vs"><span class="t">${esc(fullnm(c.lg,c.m[0]))}${dupTag(c.lg,c.m[0])}</span><span class="vs">対</span><span class="t">${esc(fullnm(c.lg,c.m[1]))}${dupTag(c.lg,c.m[1])}</span></div>
+        <div class="ch-vs"><span class="t">${esc(fullnm(c.lg,c.m[0]))}</span><span class="vs">対</span><span class="t">${esc(fullnm(c.lg,c.m[1]))}</span></div>
         <div class="ch-ref">${refTxt}<br><span style="color:var(--rest);font-size:12px">2セット制・${ruleTxt()}</span></div>
-        <table class="ch-score"><thead><tr><th></th><th>${esc(fullnm(c.lg,c.m[0]))}${dupTag(c.lg,c.m[0])}</th><th>${esc(fullnm(c.lg,c.m[1]))}${dupTag(c.lg,c.m[1])}</th></tr></thead>
+        <table class="ch-score"><thead><tr><th></th><th>${esc(fullnm(c.lg,c.m[0]))}</th><th>${esc(fullnm(c.lg,c.m[1]))}</th></tr></thead>
         <tbody><tr><th>1セット目</th><td></td><td></td></tr>
         <tr><th>2セット目</th><td></td><td></td></tr>
         <tr class="sc"><th>セットカウント</th><td></td><td></td></tr>
