@@ -470,7 +470,7 @@ function renderPrint(){
       <span class="cp-court" style="color:${L.color}">${L.name}　${L.court}</span>
       <span class="cp-tour">1試合${cfg.dur}分・${ruleTxt()}</span></div>
       <table><thead><tr><th style="width:70px">枠</th><th style="width:60px">時刻</th><th>対戦</th><th style="width:138px">審判メイン</th><th style="width:138px">審判サブ</th></tr></thead><tbody>${rows}</tbody></table>
-      <p class="note">※灰色の帯＝女子一斉枠。${otherNote(ci)}</p></div>`;
+      <p class="note">※灰色の帯＝女子一斉枠。（審判は混合チーム）${otherNote(ci)}</p></div>`;
   });
   /* 星取表ページ */
   LEAGUES.forEach(L=>{
