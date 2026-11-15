@@ -253,6 +253,58 @@ function roundRobin(n){
 }
 const flat=n=>roundRobin(n).flat();
 
+/* ---- 試合順の組み直し ----
+   枠とコートの割り振り（どの枠のどのコートでどのリーグが試合をするか）はそのままに、各リーグの試合の順番だけを決め直す。
+   ・最初の1巡は番号順（第1試合=1対2、第2試合=3対4、第3試合=5対6 …）で分かりやすく。
+   ・残りは「連戦をできるだけなくす → 試合と試合のあいだの空きをできるだけ短く」なる並びを探す。
+   乱数は種を固定しているので、同じ設定ならどの端末でも毎回同じ順番になる。 */
+const ORDER_CACHE={};
+function rng32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function orderLeague(lg,li){
+  const n=size(lg), slotOf=[], cur0=[];
+  slots.forEach((sl,i)=>sl.cells.forEach(c=>{if(c&&c.lg===lg){slotOf.push(i);cur0.push(c.m.slice());}}));
+  const M=slotOf.length; if(n<4||M!==n*(n-1)/2)return null;
+  const mk=m=>Math.min(m[0],m[1])+'-'+Math.max(m[0],m[1]);
+  const fixedN=Math.floor(n/2), fixed=[], used=new Set();
+  for(let i=0;i<fixedN;i++){fixed.push([2*i+1,2*i+2]);used.add(mk(fixed[i]));}
+  const rest0=cur0.filter(m=>!used.has(mk(m)));
+  if(fixed.length+rest0.length!==M)return null;
+  const last=new Array(n+1), hist=new Array(slots.length+2);
+  const cost=o=>{
+    last.fill(-1); hist.fill(0); let viol=0,b2b=0,sq=0;
+    for(let i=0;i<M;i++){const sidx=slotOf[i];
+      for(let q=0;q<2;q++){const t=o[i][q];
+        if(last[t]===sidx)viol++;
+        else if(last[t]>=0){const g=sidx-last[t]-1; if(g===0)b2b++; hist[g]++; sq+=g*g;}
+        last[t]=sidx;}}
+    let mx=hist.length-1; while(mx>0&&!hist[mx])mx--;
+    return viol*1e12+b2b*1e9+mx*1e7+hist[mx]*1e5+sq;
+  };
+  let best=null,bestC=Infinity;
+  for(let r=0;r<4;r++){
+    const rnd=rng32(20261129+li*7919+n*131+r*104729);
+    const rest=rest0.map(m=>m.slice());
+    if(r>0)for(let i=rest.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));const t=rest[i];rest[i]=rest[j];rest[j]=t;}
+    const o=fixed.map(m=>m.slice()).concat(rest); let c=cost(o);
+    for(let it=0;it<30000;it++){
+      const i=fixedN+Math.floor(rnd()*(M-fixedN)), j=fixedN+Math.floor(rnd()*(M-fixedN));
+      if(i===j||slotOf[i]===slotOf[j])continue;
+      let t=o[i];o[i]=o[j];o[j]=t;
+      const nc=cost(o);
+      if(nc<=c||rnd()<0.002){c=nc; if(c<bestC){bestC=c;best=o.map(m=>m.slice());}}
+      else{t=o[i];o[i]=o[j];o[j]=t;}
+    }
+  }
+  /* 対戦は小さい番号を先に書く。同じ枠に同じチームが2回入る並びしか無ければ元の順のまま */
+  return (best&&bestC<1e12)?best.map(m=>[Math.min(m[0],m[1]),Math.max(m[0],m[1])]):null;
+}
+function reorderMatches(){
+  const key=[cfg.w,cfg.m1,cfg.m2].join('/')+'|'+slots.map(sl=>sl.cells.map(c=>c?c.lg:'-').join('')).join(',');
+  let plan=ORDER_CACHE[key];
+  if(!plan){plan={};['w','m1','m2'].forEach((lg,li)=>{plan[lg]=orderLeague(lg,li);});ORDER_CACHE[key]=plan;}
+  ['w','m1','m2'].forEach(lg=>{const o=plan[lg]; if(!o)return; let i=0;
+    slots.forEach(sl=>sl.cells.forEach(c=>{if(c&&c.lg===lg)c.m=o[i++].slice();}));});
+}
 /* ---- スケジュール構築 ---- */
 let slots=[];
 function buildSchedule(){
@@ -309,6 +361,7 @@ function buildSchedule(){
     }
     t++;
   }
+  reorderMatches();
   /* ---- 審判割当（1試合に審判2チーム：refs[0]=審判メイン、refs[1]=審判サブ） ----
      同じ枠で「試合中のチーム」「同じ枠で別コートの審判」「同じ試合のもう1人」とは重ならない。
      通常枠＝その試合のリーグの休みチーム（足りなければ他リーグの休みチーム）。
