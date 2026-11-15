@@ -513,7 +513,8 @@ function dupTag(lg,t){
   const label=lg==='w'?'女子':(hit.has('m1')&&hit.has('m2')?LEAGUES.find(L=>L.key===lg).name:'混合');
   return `<span class="dtag">【${label}】</span>`;
 }
-const refTag=r=>r?dupTag(r.lg,r.t):'';
+/* 審判に付ける印: 女子チームが混合の試合の審判（サブ）に入るときは【女子】。それ以外は同じ名前のチームがいるときだけ */
+const refTag=(c,r)=>!r?'':((r.lg==='w'&&c.lg!=='w')?'<span class="dtag">【女子】</span>':dupTag(r.lg,r.t));
 /* ---- 表示ユーティリティ ---- */
 function timeOf(i){
   const [h,m]=(cfg.start||'09:00').split(':').map(Number);
@@ -523,7 +524,7 @@ function timeOf(i){
 function cellHTML(c){
   if(!c)return '<td class="mt empty">—</td>';
   const L=LEAGUES.find(l=>l.key===c.lg);
-  const ref=`<span class="ref">審判メイン <b>${esc(refName(c,c.refs[0]))}${refTag(c.refs[0])}</b>　審判サブ <b>${esc(refName(c,c.refs[1]))}${refTag(c.refs[1])}</b></span>`;
+  const ref=`<span class="ref">審判メイン <b>${esc(refName(c,c.refs[0]))}${refTag(c,c.refs[0])}</b>　審判サブ <b>${esc(refName(c,c.refs[1]))}${refTag(c,c.refs[1])}</b></span>`;
   return `<td class="mt ${L.cell}">${esc(nm(c.lg,c.m[0]))}<span class="vs">対</span>${esc(nm(c.lg,c.m[1]))}<br>${ref}</td>`;
 }
 function renderSched(){
@@ -605,7 +606,7 @@ function renderPrint(){
         const CL=LEAGUES.find(x=>x.key===c.lg);
         const other=c.lg!==L.key?` <small style="color:${CL.color};font-weight:700">[${CL.name}]</small>`:'';
         cell=`<td class="mt ${CL.cell}">${esc(nm(c.lg,c.m[0]))}<span class="vs">対</span>${esc(nm(c.lg,c.m[1]))}${other}</td>`;
-        refc=`<td class="ref refs"><b>${esc(refName(c,c.refs[0]))}${refTag(c.refs[0])}</b></td><td class="ref refs"><b>${esc(refName(c,c.refs[1]))}${refTag(c.refs[1])}</b></td>`;
+        refc=`<td class="ref refs"><b>${esc(refName(c,c.refs[0]))}${refTag(c,c.refs[0])}</b></td><td class="ref refs"><b>${esc(refName(c,c.refs[1]))}${refTag(c,c.refs[1])}</b></td>`;
       }
       const tag=sl.sim?'<span class="badge">女子一斉</span>':'';
       rows+=`<tr class="${sl.sim?'simrow':''}"><th class="slot">第${i+1}枠${tag}</th><td class="time">${timeOf(i)}</td>${cell}${refc}</tr>`;
@@ -644,7 +645,7 @@ function renderCards(){
       const L=LEAGUES.find(l=>l.key===c.lg);
       counter[c.lg]++;
       const court=['コートA','コートB','コートC'][ci];
-      const refTxt=`審判メイン：<b>${esc(refName(c,c.refs[0],true))}${refTag(c.refs[0])}</b>　審判サブ：<b>${esc(refName(c,c.refs[1],true))}${refTag(c.refs[1])}</b>`;
+      const refTxt=`審判メイン：<b>${esc(refName(c,c.refs[0],true))}${refTag(c,c.refs[0])}</b>　審判サブ：<b>${esc(refName(c,c.refs[1],true))}${refTag(c,c.refs[1])}</b>`;
       const half=`<div class="chalf">
         <div class="ch-top"><span class="ch-brand"><b>miracle</b>杯 対戦カード</span>
           <span class="ch-meta" style="color:${L.color}">${L.name} 第${counter[c.lg]}試合</span>
