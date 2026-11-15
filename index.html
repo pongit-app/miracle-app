@@ -311,13 +311,18 @@ function buildSchedule(){
      同じ枠で「試合中のチーム」「同じ枠で別コートの審判」「同じ試合のもう1人」とは重ならない。
      通常枠＝その試合のリーグの休みチーム（足りなければ他リーグの休みチーム）。
      女子一斉枠＝混合チーム（足りなければ休みの女子チーム）。
-     回数が少ないチーム優先、2枠連続の審判はなるべく避ける。 */
+     回数が少ないチーム優先、2枠連続の審判はなるべく避ける。
+     同じ名前のチーム（例：女子と混合の MIX HIGH JUMP）は同じクラブとして扱い、
+     片方が試合中・審判中の枠では、もう片方を審判にしない。 */
   const refCnt={}, LG=['w','m1','m2'];
+  const club=key=>{const v=names[key];return v?String(v).trim().toLowerCase():null;};
   let prevRefs=new Set();
   slots.forEach(sl=>{
     const playing=new Set();
     sl.cells.forEach(c=>{if(c){playing.add(c.lg+':'+c.m[0]);playing.add(c.lg+':'+c.m[1]);}});
     const used=new Set();
+    const busyClub=new Set();   /* この枠で試合中・審判中のチーム名 */
+    playing.forEach(key=>{const n=club(key);if(n)busyClub.add(n);});
     sl.cells.forEach(c=>{
       if(!c)return;
       const prefer=sl.sim?['m1','m2']:[c.lg];
@@ -330,13 +335,14 @@ function buildSchedule(){
             for(let x=1;x<=size(lg);x++){
               const key=lg+':'+x;
               if(playing.has(key)||used.has(key))continue;
+              const cn=club(key); if(cn&&busyClub.has(cn))continue;
               const cost=(refCnt[key]||0)*100+(prevRefs.has(key)?10:0);
               if(cost<bestCost){bestCost=cost;best={lg,t:x};}
             }
           }
           if(best)break;
         }
-        if(best){const key=best.lg+':'+best.t;used.add(key);refCnt[key]=(refCnt[key]||0)+1;}
+        if(best){const key=best.lg+':'+best.t;used.add(key);refCnt[key]=(refCnt[key]||0)+1;const cn=club(key);if(cn)busyClub.add(cn);}
         c.refs.push(best);
       }
     });
@@ -409,7 +415,7 @@ function renderNames(){
     const key=k(inp.dataset.lg,inp.dataset.t), val=inp.value.trim();
     if(val)names[key]=val; else delete names[key];
     localStorage.setItem(NK,JSON.stringify(names));
-    renderSched();renderStars();renderPrint();
+    buildSchedule();saveSchedule();renderSched();renderStars();renderPrint();
   }));
 }
 /* ---- 印刷ページ (A4・コート毎) ---- */
@@ -590,7 +596,7 @@ function clearAll(){
 /* 結果アプリ(別ウィンドウ)で名前の変更・全データクリア・読込があったら取り込む */
 window.addEventListener('storage',e=>{
   if(e.key===null||(e.key===CK&&e.newValue===null)||(e.key===RK&&e.newValue===null)){location.reload();return;}
-  if(e.key===NK){try{names=JSON.parse(e.newValue)||{}}catch(err){names={}}renderSched();renderStars();renderNames();renderPrint();}
+  if(e.key===NK){try{names=JSON.parse(e.newValue)||{}}catch(err){names={}}buildSchedule();saveSchedule();renderSched();renderStars();renderNames();renderPrint();}
   if(e.key===CK){try{const c=JSON.parse(e.newValue);if(c&&JSON.stringify(c)!==JSON.stringify(cfg)){location.reload();}}catch(err){}}
 });
 localStorage.setItem(CK,JSON.stringify(cfg));bindCfg();rebuild();
