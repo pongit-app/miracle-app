@@ -50,6 +50,9 @@ thead th{background:var(--head);color:#fff;font-weight:600;font-size:13px}
 .star tbody .sno{position:absolute;left:2px;top:50%;transform:translateY(-50%);font-size:.72em}
 .star tbody .snm{display:inline-block;vertical-align:middle;text-align:center}
 .star td.sc2{padding:0}
+.star .sc{display:flex;align-items:stretch}
+.star .sc .ss{flex:1;min-width:0}
+.star .sc .wp{flex:0 0 24%;min-width:16px;border-left:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:800}
 .star td.sc2 span{display:block;line-height:19px;font-size:12px;color:var(--rest)}
 .star td.sc2 span+span{border-top:1px dotted var(--line)}
 .star .diag{background:#e7ebf3}.star .tot,.star .rank{background:#fbeef4;font-size:12px}
@@ -93,13 +96,15 @@ thead th{background:var(--head);color:#fff;font-weight:600;font-size:13px}
  .pp.starpp .star td.gc{height:68px}
  .pp.starpp .star td.sc2 span{line-height:33.5px;font-size:15px}
  .star td.sc2 span+span{border-top:1px dotted #999}
+ .star .sc .wp{border-left:1px solid #777;flex-basis:22px}
  .pp.starpp .star thead .gh{font-size:11px;padding:6px 2px;letter-spacing:0;word-break:keep-all}
  .pp.starpp .star tbody .gh{word-break:keep-all}
- .pp.starpp .star .corner{width:20%!important}
+ .pp.starpp .star .corner{width:17%!important}
  .pp.starpp .star thead .snm{font-size:10.5px;letter-spacing:-.5px}
  .pp.starpp .star thead .sno{font-size:8.5px}
  .pp.starpp .star thead th:nth-last-child(-n+2){width:5%!important}
- .pp.starpp .star tbody .gh{font-size:17.5px;line-height:1.2}
+ .pp.starpp .star tbody .gh{font-size:15.5px;line-height:1.2}
+ .pp.starpp .star .rh{padding:0 4px 0 15px}
  .star thead .gh{font-size:9.5px;padding:4px 1px;letter-spacing:-.3px}
  body.cards-mode #printpages{display:none}
  body.cards-mode #printcards{display:block}
@@ -122,9 +127,9 @@ thead th{background:var(--head);color:#fff;font-weight:600;font-size:13px}
 }
 /* ===== 対戦カード (A4に2試合 → 切ってA5。控えなし) ===== */
 #printcards{display:none}
-.cardpage{height:296mm;padding:8mm 11mm;display:flex;flex-direction:column;page-break-after:always}
-.chalf{height:136mm;padding:6mm 8mm 0;display:flex;flex-direction:column}
-.cutline{flex:0 0 auto;border-top:2px dashed #888;position:relative;margin:2mm 0}
+.cardpage{height:296.6mm;padding:0 11mm;display:flex;flex-direction:column;page-break-after:always;overflow:hidden}
+.chalf{height:calc(148.3mm - 1px);flex:0 0 auto;padding:12mm 8mm 0;display:flex;flex-direction:column}
+.cutline{flex:0 0 auto;border-top:2px dashed #888;position:relative;margin:0}
 .cutline::before{content:"✂";position:absolute;left:4mm;top:-3.4mm;color:#666;font-size:14px;background:#fff;padding:0 3px}
 .ch-top{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid var(--head);padding-bottom:2mm}
 .ch-brand{font-size:15px;font-weight:800;color:var(--head)}
@@ -338,7 +343,7 @@ function buildSchedule(){
 }
 
 /* 星取表の対戦マス: 上=1セット目、下=2セット目。「ー」の左右に得点を書く */
-const SC2='<td class="gc sc2"><span>ー</span><span>ー</span></td>';
+const SC2='<td class="gc sc2"><div class="sc"><div class="ss"><span>ー</span><span>ー</span></div><div class="wp"></div></div></td>';
 /* 審判チーム名（チーム名だけ。リーグの印は付けない） */
 function refName(c,r,full){
   if(!r)return '—';
@@ -452,7 +457,8 @@ function renderPrint(){
     html+=`<div class="pp starpp"><div class="cp-head" style="border-color:${L.color}">
       <span class="cp-court" style="color:${L.color}">${L.name}　${L.court}</span>
       <span class="cp-tour">${n}チーム 総当たり</span></div>
-      <table class="star"><thead><tr><th class="gh corner"></th>${head}<th class="gh" style="width:7%">勝点</th><th class="gh" style="width:7%">順位</th></tr></thead><tbody>${body}</tbody></table></div>`;
+      <table class="star"><thead><tr><th class="gh corner"></th>${head}<th class="gh" style="width:7%">勝点</th><th class="gh" style="width:7%">順位</th></tr></thead><tbody>${body}</tbody></table>
+      <p class="note">※各マスの右の欄＝その試合の勝ち点（勝ち2点・引き分け1点・負け0点）。</p></div>`;
   });
   document.getElementById('printpages').innerHTML=html;
 }
