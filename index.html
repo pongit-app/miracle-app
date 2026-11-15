@@ -621,7 +621,7 @@ function openResults(){
   if(!w) alert('ポップアップがブロックされました。ブラウザのポップアップ許可をオンにするか、miracle-results.html を直接開いてください。');
 }
 function exportData(){
-  const data={config:cfg,
+  const data={canon:1,config:cfg,
     names:JSON.parse(localStorage.getItem(NK)||'{}'),
     results:JSON.parse(localStorage.getItem(RK)||'{}'),
     archive:JSON.parse(localStorage.getItem(AK)||'[]'),
@@ -638,6 +638,7 @@ document.getElementById('imp').addEventListener('change',e=>{
     if(d.results)localStorage.setItem(RK,JSON.stringify(d.results));
     if(d.archive)localStorage.setItem(AK,JSON.stringify(d.archive));
     if(d.schedule)localStorage.setItem(SK,JSON.stringify(d.schedule));
+    if(d.canon)localStorage.setItem('miracle_canon_v1','1'); else localStorage.removeItem('miracle_canon_v1');
     alert('読み込みました');location.reload();
   }catch(err){alert('このファイルは読み込めませんでした');}};rd.readAsText(f);
 });

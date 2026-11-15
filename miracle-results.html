@@ -120,9 +120,9 @@ function orderedMatches(lg){
   if(sched&&sched.lg&&sched.lg[lg]&&sched.cfg&&sizeOf(lg,sched.cfg)==sizeOf(lg,cfg)){
     const list=sched.lg[lg];
     const a=new Set(base.map(p=>rkey(lg,p))), b=new Set(list.map(m=>rkey(lg,[m.a,m.b])));
-    if(a.size===b.size&&[...a].every(x=>b.has(x))) return list.map(m=>({p:[m.a,m.b],slot:m.slot,court:m.court}));
+    if(a.size===b.size&&[...a].every(x=>b.has(x))) return list.map(m=>({p:[Math.min(m.a,m.b),Math.max(m.a,m.b)],slot:m.slot,court:m.court}));
   }
-  return base.map(p=>({p,slot:null,court:null}));
+  return base.map(p=>({p:[Math.min(p[0],p[1]),Math.max(p[0],p[1])],slot:null,court:null}));
 }
 function timeOf(i){
   const [h,m]=(cfg.start||'09:00').split(':').map(Number);
@@ -147,7 +147,8 @@ function calc2(lg,C,R){
   for(let t=1;t<=n;t++)st[t]={t,g:0,w:0,d:0,l:0,sw:0,sl:0,pf:0,pa:0};
   pairsFor(lg,C).forEach(pr=>{
     const r=R[rkey(lg,pr)];if(!r)return;
-    const [a,b]=pr;let sA=0,sB=0,played=false;
+    const a=Math.min(pr[0],pr[1]), b=Math.max(pr[0],pr[1]);  /* 得点の a 側は必ず小さい番号のチーム */
+    let sA=0,sB=0,played=false;
     [[r.s1a,r.s1b],[r.s2a,r.s2b]].forEach(([x,y])=>{
       if(x===''||y===''||x==null||y==null)return;
       x=+x;y=+y;played=true;
@@ -310,7 +311,7 @@ function clearLeague(){
   localStorage.setItem(RK,JSON.stringify(results));renderAll();
 }
 function exportData(){
-  const data={config:cfg,names:JSON.parse(localStorage.getItem(NK)||'{}'),
+  const data={canon:1,config:cfg,names:JSON.parse(localStorage.getItem(NK)||'{}'),
     results:JSON.parse(localStorage.getItem(RK)||'{}'),
     archive:JSON.parse(localStorage.getItem(AK)||'[]'),
     schedule:JSON.parse(localStorage.getItem(SK)||'null')};
@@ -326,11 +327,25 @@ document.getElementById('imp').addEventListener('change',e=>{
     if(d.results)localStorage.setItem(RK,JSON.stringify(d.results));
     if(d.archive)localStorage.setItem(AK,JSON.stringify(d.archive));
     if(d.schedule)localStorage.setItem(SK,JSON.stringify(d.schedule));
+    if(d.canon)localStorage.setItem('miracle_canon_v1','1'); else localStorage.removeItem('miracle_canon_v1');
     alert('読み込みました');location.reload();
   }catch(err){alert('このファイルは読み込めませんでした');}};rd.readAsText(f);
 });
 /* ---- 過去の戦績アーカイブ ---- */
 let archive=[]; try{archive=JSON.parse(localStorage.getItem(AK))||[]}catch(e){}
+/* 旧形式(総当たり表の並びの向き)で保存された得点を、一度だけ「小さい番号のチームが a」の向きに直す */
+function canonize(R,C){
+  const C2=Object.assign({},DEF,C||{});
+  ['w','m1','m2'].forEach(lg=>pairsFor(lg,C2).forEach(([x,y])=>{
+    if(x>y){const r=R[rkey(lg,[x,y])]; if(r){let t=r.s1a;r.s1a=r.s1b;r.s1b=t; t=r.s2a;r.s2a=r.s2b;r.s2b=t;}}
+  }));
+}
+if(!localStorage.getItem('miracle_canon_v1')){
+  canonize(results,cfg); localStorage.setItem(RK,JSON.stringify(results));
+  archive.forEach(a=>canonize(a.results||{},a.config));
+  if(archive.length)localStorage.setItem(AK,JSON.stringify(archive));
+  localStorage.setItem('miracle_canon_v1','1');
+}
 let viewIdx=null;
 function saveArchive(){localStorage.setItem(AK,JSON.stringify(archive));}
 function snapshotIfAny(){
