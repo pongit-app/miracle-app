@@ -424,6 +424,13 @@ function renderPrint(){
       for(let t=1;t<=n;t++)list+=`<div class="pn-row"><span class="pn-no" style="color:${L.color}">${t}</span><span class="pn-name">${esc(fullnm(L.key,t))}</span></div>`;
       return `<div><div class="pn-head" style="border-color:${L.color};color:${L.color}">${L.name}　${L.court}</div>${list}</div>`;
     }).join('')+'</div></div>';
+  /* 注釈: 一斉枠以外で、このコートに他リーグの試合が入る枠があれば「第23枠のみBコートの混合①の試合。」のように添える */
+  const otherNote=ci=>{
+    const by={};
+    slots.forEach((sl,i)=>{const c=sl.cells[ci]; if(c&&!sl.sim&&c.lg!==LEAGUES[ci].key)(by[c.lg]=by[c.lg]||[]).push(i+1);});
+    return Object.keys(by).map(lg=>{const L2=LEAGUES.find(x=>x.key===lg);
+      return `<br>※第${by[lg].join('・')}枠のみ${L2.court.replace(/^コート(.+)$/,'$1コート')}の${L2.name}の試合。`;}).join('');
+  };
   /* コート毎ページ */
   [0,1,2].forEach(ci=>{
     const L=LEAGUES[ci];
@@ -445,7 +452,7 @@ function renderPrint(){
       <span class="cp-court" style="color:${L.color}">${L.name}　${L.court}</span>
       <span class="cp-tour">1試合${cfg.dur}分・${ruleTxt()}</span></div>
       <table><thead><tr><th style="width:70px">枠</th><th style="width:60px">時刻</th><th>対戦</th><th style="width:125px">審判メイン</th><th style="width:125px">審判サブ</th></tr></thead><tbody>${rows}</tbody></table>
-      <p class="note">※灰色の帯＝女子一斉枠。[混合①][混合②]表記はこのコートで消化する他リーグの試合。</p></div>`;
+      <p class="note">※灰色の帯＝女子一斉枠。${otherNote(ci)}</p></div>`;
   });
   /* 星取表ページ */
   LEAGUES.forEach(L=>{
