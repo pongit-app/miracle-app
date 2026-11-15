@@ -49,8 +49,7 @@ thead th{background:var(--head);color:#fff;font-weight:600;font-size:13px}
 .star .rh{position:relative;padding:0 14px}
 .star tbody .sno{position:absolute;left:2px;top:50%;transform:translateY(-50%);font-size:.72em}
 .star tbody .snm{display:inline-block;vertical-align:middle;text-align:center}
-.dtag{font-size:.78em;font-weight:500;white-space:nowrap;letter-spacing:-.5px}
-.ch-vs .dtag{font-size:.55em;vertical-align:middle}
+.dtag{font-size:1em;font-weight:inherit;white-space:nowrap}
 .star td.sc2{padding:0}
 .star .sc{display:flex;align-items:stretch}
 .star .sc .ss{flex:1;min-width:0}
@@ -604,7 +603,7 @@ function renderPrint(){
       if(!c){cell='<td class="mt empty">—</td>';refc='<td class="ref refs">—</td><td class="ref refs">—</td>';}
       else{
         const CL=LEAGUES.find(x=>x.key===c.lg);
-        const other=c.lg!==L.key?` <small style="color:${CL.color};font-weight:700">[${CL.name}]</small>`:'';
+        const other=c.lg!==L.key?` <small style="color:${CL.color};font-weight:700;white-space:nowrap;font-size:.72em">[${CL.name}]</small>`:'';
         cell=`<td class="mt ${CL.cell}">${esc(nm(c.lg,c.m[0]))}<span class="vs">対</span>${esc(nm(c.lg,c.m[1]))}${other}</td>`;
         refc=`<td class="ref refs"><b>${esc(refName(c,c.refs[0]))}${refTag(c,c.refs[0])}</b></td><td class="ref refs"><b>${esc(refName(c,c.refs[1]))}${refTag(c,c.refs[1])}</b></td>`;
       }
@@ -614,7 +613,7 @@ function renderPrint(){
     html+=`<div class="pp"><div class="cp-head" style="border-color:${L.color}">
       <span class="cp-court" style="color:${L.color}">${L.name}　${L.court}</span>
       <span class="cp-tour">1試合${cfg.dur}分・${ruleTxt()}</span></div>
-      <table><thead><tr><th style="width:70px">枠</th><th style="width:60px">時刻</th><th>対戦</th><th style="width:138px">審判メイン</th><th style="width:138px">審判サブ</th></tr></thead><tbody>${rows}</tbody></table>
+      <table><thead><tr><th style="width:66px">枠</th><th style="width:54px">時刻</th><th>対戦</th><th style="width:150px">審判メイン</th><th style="width:150px">審判サブ</th></tr></thead><tbody>${rows}</tbody></table>
       <p class="note">※灰色の帯＝女子一斉枠。（審判は混合チーム）${otherNote(ci)}</p></div>`;
   });
   /* 星取表ページ */
